@@ -1,0 +1,562 @@
+'use client';
+import { useState, useEffect, useRef } from 'react';
+import { createClient } from '@/lib/supabase/client';
+import { ITEM_CATEGORIES, STORAGE_LOCATIONS, CONDITIONS } from '@/lib/constants';
+import { estimateFMV } from '@/lib/fmv';
+import { submitCheckIn } from '@/app/actions/checkIn';
+import FMVGuidePanel from '@/components/FMVGuidePanel';
+import toast from 'react-hot-toast';
+import QRCode from 'qrcode';
+import { format } from 'date-fns';
+
+type Donor = {
+  id: string;
+  name: string;
+  organization: string | null;
+  email: string | null;
+  phone: string | null;
+  bloomerang_contact_id: string | null;
+};
+
+type Step = 1 | 2 | 3;
+
+export default function CheckInPage() {
+  const supabase = createClient();
+  const [step, setStep] = useState<Step>(1);
+  const [loading, setLoading] = useState(false);
+
+  // Step 1 – Donor
+  const [donorSearch, setDonorSearch] = useState('');
+  const [donorResults, setDonorResults] = useState<Donor[]>([]);
+  const [selectedDonor, setSelectedDonor] = useState<Donor | null>(null);
+  const [isNewDonor, setIsNewDonor] = useState(false);
+  const [newDonorName, setNewDonorName] = useState('');
+  const [newDonorOrg, setNewDonorOrg] = useState('');
+  const [newDonorEmail, setNewDonorEmail] = useState('');
+  const [newDonorPhone, setNewDonorPhone] = useState('');
+
+  // Step 2 – Item
+  const [category, setCategory] = useState('');
+  const [description, setDescription] = useState('');
+  const [storageLocation, setStorageLocation] = useState('');
+  const [condition, setCondition] = useState('');
+  const [quantity, setQuantity] = useState(1);
+  const [fmvPerUnit, setFmvPerUnit] = useState(0);
+  const [notes, setNotes] = useState('');
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [dateReceived, setDateReceived] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // FMV guide panel
+  const [fmvGuideOpen, setFmvGuideOpen] = useState(false);
+
+  // Success
+  const [successItemId, setSuccessItemId] = useState<string | null>(null);
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const [successDescription, setSuccessDescription] = useState('');
+
+  // Donor search
+  useEffect(() => {
+    if (donorSearch.length < 2) { setDonorResults([]); return; }
+    const timer = setTimeout(async () => {
+      const { data } = await supabase
+        .from('donors')
+        .select('*')
+        .ilike('name', `%${donorSearch}%`)
+        .limit(8);
+      setDonorResults(data ?? []);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [donorSearch]);
+
+  // Auto-calculate FMV when category/condition changes
+  useEffect(() => {
+    if (category && condition) {
+      setFmvPerUnit(estimateFMV(category, condition));
+    }
+  }, [category, condition]);
+
+  function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPhotoFile(file);
+    const reader = new FileReader();
+    reader.onload = ev => setPhotoPreview(ev.target?.result as string);
+    reader.readAsDataURL(file);
+  }
+
+  async function saveDonorIfNew(): Promise<Donor> {
+    if (selectedDonor) return selectedDonor;
+    // Create new donor
+    const { data, error } = await supabase
+      .from('donors')
+      .insert({
+        name: newDonorName.trim(),
+        organization: newDonorOrg.trim() || null,
+        email: newDonorEmail.trim() || null,
+        phone: newDonorPhone.trim() || null,
+      })
+      .select()
+      .single();
+    if (error || !data) throw new Error(error?.message ?? 'Failed to create donor');
+    return data as Donor;
+  }
+
+  async function uploadPhoto(): Promise<string | undefined> {
+    if (!photoFile) return undefined;
+    const ext = photoFile.name.split('.').pop();
+    const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+    const { error } = await supabase.storage
+      .from('item-photos')
+      .upload(filename, photoFile, { contentType: photoFile.type });
+    if (error) { toast.error('Photo upload failed — continuing without photo'); return undefined; }
+    const { data } = supabase.storage.from('item-photos').getPublicUrl(filename);
+    return data.publicUrl;
+  }
+
+  async function handleSubmit() {
+    setLoading(true);
+    try {
+      const donor = await saveDonorIfNew();
+      const photoUrl = await uploadPhoto();
+
+      const result = await submitCheckIn({
+        donorId: donor.id,
+        donorBloomerangId: donor.bloomerang_contact_id ?? undefined,
+        category,
+        description: description.trim(),
+        storageLocation,
+        condition,
+        quantity,
+        fmvPerUnit,
+        photoUrl,
+        notes: notes.trim() || undefined,
+        dateReceived,
+      });
+
+      // Generate QR code
+      const qr = await QRCode.toDataURL(result.itemId, { width: 256, margin: 2 });
+      setQrDataUrl(qr);
+      setSuccessItemId(result.itemId);
+      setSuccessDescription(description.trim());
+      setStep(3);
+      toast.success('Check-in recorded!');
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function resetForm() {
+    setStep(1);
+    setDonorSearch('');
+    setDonorResults([]);
+    setSelectedDonor(null);
+    setIsNewDonor(false);
+    setNewDonorName(''); setNewDonorOrg(''); setNewDonorEmail(''); setNewDonorPhone('');
+    setCategory(''); setDescription(''); setStorageLocation(''); setCondition('');
+    setQuantity(1); setFmvPerUnit(0); setNotes('');
+    setPhotoFile(null); setPhotoPreview(null);
+    setDateReceived(format(new Date(), 'yyyy-MM-dd'));
+    setSuccessItemId(null); setQrDataUrl(null);
+  }
+
+  const canProceedStep1 = selectedDonor || (isNewDonor && newDonorName.trim().length > 0);
+  const canProceedStep2 = category && description.trim() && storageLocation && condition && quantity > 0 && fmvPerUnit >= 0;
+
+  const donorDisplay = selectedDonor?.name ?? newDonorName;
+
+  // ── SUCCESS SCREEN ─────────────────────────────────────
+  if (step === 3 && successItemId) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-8">
+        <div className="w-full max-w-sm">
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 text-center no-print">
+            <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span className="text-3xl">✅</span>
+            </div>
+            <h2 className="text-xl font-bold text-gray-900 mb-1">Check-In Complete</h2>
+            <p className="text-gray-500 text-sm mb-5">{successDescription}</p>
+
+            {qrDataUrl && (
+              <div className="mb-5">
+                <img src={qrDataUrl} alt="QR code" className="mx-auto w-48 h-48" />
+                <p className="text-xs text-gray-400 mt-2">Scan to find this item in inventory</p>
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => window.print()}
+                className="flex-1 border border-gray-300 text-gray-700 py-2.5 rounded-xl font-medium hover:bg-gray-50 transition-colors"
+              >
+                🖨️ Print Label
+              </button>
+              <button
+                onClick={resetForm}
+                className="flex-1 bg-green-700 text-white py-2.5 rounded-xl font-medium hover:bg-green-800 transition-colors"
+              >
+                New Check-In
+              </button>
+            </div>
+          </div>
+
+          {/* Print-only label */}
+          {qrDataUrl && (
+            <div className="print-only text-center p-4">
+              <p className="font-bold text-lg mb-1">Family Promise of Greater Washington County</p>
+              <p className="text-base mb-2">{successDescription}</p>
+              <img src={qrDataUrl} alt="QR code" className="mx-auto w-40 h-40" />
+              <p className="text-xs mt-1 font-mono break-all">{successItemId}</p>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 px-4 py-6 pb-28 md:pb-10 max-w-lg mx-auto">
+      {/* Header */}
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Check In Donation</h1>
+        <p className="text-gray-500 text-sm mt-1">Record an in-kind donation</p>
+      </div>
+
+      {/* Step indicator */}
+      <div className="flex items-center gap-2 mb-8">
+        {[1, 2].map(s => (
+          <div key={s} className="flex items-center gap-2">
+            <div
+              className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-colors ${
+                step === s
+                  ? 'bg-green-700 text-white'
+                  : step > s
+                  ? 'bg-green-100 text-green-700'
+                  : 'bg-gray-200 text-gray-500'
+              }`}
+            >
+              {step > s ? '✓' : s}
+            </div>
+            <span className={`text-sm hidden md:inline ${step === s ? 'text-green-700 font-medium' : 'text-gray-400'}`}>
+              {s === 1 ? 'Donor' : 'Item Details'}
+            </span>
+            {s < 2 && <div className="w-8 h-0.5 bg-gray-200 mx-1" />}
+          </div>
+        ))}
+      </div>
+
+      {/* Step 1 – Donor */}
+      {step === 1 && (
+        <div className="space-y-5">
+          <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
+            <h2 className="font-semibold text-gray-900 mb-4">Who is donating?</h2>
+
+            {!isNewDonor && !selectedDonor && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Search donor by name</label>
+                  <input
+                    type="text"
+                    value={donorSearch}
+                    onChange={e => setDonorSearch(e.target.value)}
+                    placeholder="Start typing a name…"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-600 text-base"
+                  />
+                </div>
+                {donorResults.length > 0 && (
+                  <div className="mt-2 border border-gray-200 rounded-xl overflow-hidden">
+                    {donorResults.map(d => (
+                      <button
+                        key={d.id}
+                        onClick={() => { setSelectedDonor(d); setDonorSearch(''); setDonorResults([]); }}
+                        className="w-full text-left px-4 py-3 hover:bg-green-50 border-b border-gray-100 last:border-0 transition-colors"
+                      >
+                        <p className="font-medium text-gray-900 text-sm">{d.name}</p>
+                        {d.organization && <p className="text-xs text-gray-500">{d.organization}</p>}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <button
+                  onClick={() => setIsNewDonor(true)}
+                  className="mt-4 w-full border-2 border-dashed border-gray-300 text-gray-600 py-3 rounded-xl text-sm hover:border-green-500 hover:text-green-700 transition-colors"
+                >
+                  + Add new donor
+                </button>
+              </>
+            )}
+
+            {selectedDonor && (
+              <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-start justify-between">
+                <div>
+                  <p className="font-semibold text-green-900">{selectedDonor.name}</p>
+                  {selectedDonor.organization && <p className="text-sm text-green-700">{selectedDonor.organization}</p>}
+                  {selectedDonor.email && <p className="text-xs text-green-600">{selectedDonor.email}</p>}
+                </div>
+                <button onClick={() => setSelectedDonor(null)} className="text-green-600 hover:text-red-500 text-sm ml-3">✕</button>
+              </div>
+            )}
+
+            {isNewDonor && !selectedDonor && (
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Full Name <span className="text-red-500">*</span></label>
+                  <input
+                    type="text"
+                    value={newDonorName}
+                    onChange={e => setNewDonorName(e.target.value)}
+                    placeholder="Jane Smith"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-600 text-base"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Organization (optional)</label>
+                  <input
+                    type="text"
+                    value={newDonorOrg}
+                    onChange={e => setNewDonorOrg(e.target.value)}
+                    placeholder="Company or church name"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-600 text-base"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email (optional)</label>
+                  <input
+                    type="email"
+                    value={newDonorEmail}
+                    onChange={e => setNewDonorEmail(e.target.value)}
+                    placeholder="jane@example.com"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-600 text-base"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone (optional)</label>
+                  <input
+                    type="tel"
+                    value={newDonorPhone}
+                    onChange={e => setNewDonorPhone(e.target.value)}
+                    placeholder="(503) 555-0100"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-600 text-base"
+                  />
+                </div>
+                <button
+                  onClick={() => setIsNewDonor(false)}
+                  className="text-sm text-gray-500 hover:text-gray-700 underline"
+                >
+                  ← Back to search
+                </button>
+              </div>
+            )}
+          </div>
+
+          <button
+            onClick={() => setStep(2)}
+            disabled={!canProceedStep1}
+            className="w-full bg-green-700 text-white py-3.5 rounded-xl font-semibold text-base hover:bg-green-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            Next: Item Details →
+          </button>
+        </div>
+      )}
+
+      {/* Step 2 – Item Details */}
+      {step === 2 && (
+        <div className="space-y-5">
+          <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">Donor</span>
+              <span className="text-sm text-gray-700 font-medium">{donorDisplay}</span>
+            </div>
+            <h2 className="font-semibold text-gray-900 mt-3 mb-4">Item Details</h2>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Category <span className="text-red-500">*</span></label>
+                <select
+                  value={category}
+                  onChange={e => setCategory(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-600 text-base bg-white"
+                >
+                  <option value="">Select category…</option>
+                  {ITEM_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description <span className="text-red-500">*</span></label>
+                <input
+                  type="text"
+                  value={description}
+                  onChange={e => setDescription(e.target.value)}
+                  placeholder="e.g., Queen comforter set, blue"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-600 text-base"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Storage Location <span className="text-red-500">*</span></label>
+                <select
+                  value={storageLocation}
+                  onChange={e => setStorageLocation(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-600 text-base bg-white"
+                >
+                  <option value="">Select location…</option>
+                  {STORAGE_LOCATIONS.map(l => <option key={l} value={l}>{l}</option>)}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Condition <span className="text-red-500">*</span></label>
+                  <select
+                    value={condition}
+                    onChange={e => setCondition(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-600 text-sm bg-white"
+                  >
+                    <option value="">Select…</option>
+                    {CONDITIONS.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Quantity <span className="text-red-500">*</span></label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={quantity}
+                    onChange={e => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-600 text-base"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-sm font-medium text-gray-700">
+                    FMV Per Unit ($)
+                    <span className="text-xs text-gray-400 font-normal ml-2">auto-estimated — editable</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setFmvGuideOpen(true)}
+                    className="flex items-center gap-1 text-xs text-green-700 font-medium bg-green-50 hover:bg-green-100 border border-green-200 px-2.5 py-1 rounded-lg transition-colors"
+                  >
+                    <span>📋</span> Value Guide
+                  </button>
+                </div>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={fmvPerUnit}
+                  onChange={e => setFmvPerUnit(parseFloat(e.target.value) || 0)}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-600 text-base"
+                />
+                {fmvPerUnit > 0 && quantity > 1 && (
+                  <p className="text-xs text-green-700 mt-1">
+                    Total FMV: ${(fmvPerUnit * quantity).toFixed(2)}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Date Received</label>
+                <input
+                  type="date"
+                  value={dateReceived}
+                  onChange={e => setDateReceived(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-600 text-base"
+                />
+              </div>
+
+              {/* Photo upload */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Photo (optional)</label>
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className="border-2 border-dashed border-gray-300 rounded-xl p-4 text-center cursor-pointer hover:border-green-500 hover:bg-green-50 transition-colors"
+                >
+                  {photoPreview ? (
+                    <img src={photoPreview} alt="Preview" className="mx-auto max-h-32 rounded-lg object-cover" />
+                  ) : (
+                    <>
+                      <span className="text-2xl">📷</span>
+                      <p className="text-sm text-gray-500 mt-1">Tap to add a photo</p>
+                    </>
+                  )}
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handlePhotoChange}
+                  className="hidden"
+                />
+                {photoPreview && (
+                  <button
+                    onClick={() => { setPhotoFile(null); setPhotoPreview(null); }}
+                    className="text-xs text-red-500 hover:text-red-700 mt-1"
+                  >
+                    Remove photo
+                  </button>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Notes (optional)</label>
+                <textarea
+                  value={notes}
+                  onChange={e => setNotes(e.target.value)}
+                  rows={2}
+                  placeholder="Any additional details…"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-600 text-base resize-none"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Review summary */}
+          {canProceedStep2 && (
+            <div className="bg-green-50 border border-green-200 rounded-2xl p-4 text-sm">
+              <p className="font-semibold text-green-900 mb-2">Summary</p>
+              <div className="space-y-1 text-green-800">
+                <p><span className="font-medium">Donor:</span> {donorDisplay}</p>
+                <p><span className="font-medium">Item:</span> {description}</p>
+                <p><span className="font-medium">Category:</span> {category}</p>
+                <p><span className="font-medium">Location:</span> {storageLocation}</p>
+                <p><span className="font-medium">Condition:</span> {condition}</p>
+                <p><span className="font-medium">Qty:</span> {quantity} &nbsp;|&nbsp; <span className="font-medium">FMV:</span> ${(fmvPerUnit * quantity).toFixed(2)}</p>
+              </div>
+            </div>
+          )}
+
+          <div className="flex gap-3">
+            <button
+              onClick={() => setStep(1)}
+              className="flex-1 border border-gray-300 text-gray-700 py-3.5 rounded-xl font-semibold hover:bg-gray-50 transition-colors"
+            >
+              ← Back
+            </button>
+            <button
+              onClick={handleSubmit}
+              disabled={!canProceedStep2 || loading}
+              className="flex-[2] bg-green-700 text-white py-3.5 rounded-xl font-semibold text-base hover:bg-green-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              {loading ? 'Saving…' : '✅ Submit Check-In'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* FMV Value Guide Panel */}
+      <FMVGuidePanel
+        open={fmvGuideOpen}
+        onClose={() => setFmvGuideOpen(false)}
+        activeCategory={category}
+      />
+    </div>
+  );
+}
