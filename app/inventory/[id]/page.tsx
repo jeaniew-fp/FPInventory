@@ -4,7 +4,8 @@ import Layout from '@/components/Layout';
 import { format } from 'date-fns';
 import QRDisplay from './QRDisplay';
 
-export default async function ItemDetailPage({ params }: { params: { id: string } }) {
+export default async function ItemDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
@@ -14,7 +15,7 @@ export default async function ItemDetailPage({ params }: { params: { id: string 
   const { data: item } = await supabase
     .from('inventory_items')
     .select('*')
-    .eq('id', params.id)
+    .eq('id', id)
     .single();
 
   if (!item) notFound();
@@ -22,13 +23,13 @@ export default async function ItemDetailPage({ params }: { params: { id: string 
   const { data: checkIns } = await supabase
     .from('check_ins')
     .select('*, donors(name, organization)')
-    .eq('inventory_item_id', params.id)
+    .eq('inventory_item_id', id)
     .order('date_received', { ascending: false });
 
   const { data: checkOuts } = await supabase
     .from('check_outs')
     .select('*, profiles(full_name)')
-    .eq('inventory_item_id', params.id)
+    .eq('inventory_item_id', id)
     .order('date_given', { ascending: false });
 
   const totalReceived = checkIns?.reduce((s, c) => s + c.quantity, 0) ?? 0;
