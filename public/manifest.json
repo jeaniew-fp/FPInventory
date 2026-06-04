@@ -1,0 +1,24 @@
+{
+  "name": "FPGWC Inventory",
+  "short_name": "FP Inventory",
+  "description": "In-Kind Donation Inventory System for Family Promise of Greater Washington County",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f9fafb",
+  "theme_color": "#8d4982",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/fpgwc-logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/fpgwc-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
