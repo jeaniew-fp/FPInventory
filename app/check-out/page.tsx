@@ -1,10 +1,14 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { PROGRAMS } from '@/lib/constants';
 import { submitCheckOut } from '@/app/actions/checkOut';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
+import dynamic from 'next/dynamic';
+
+const QRScanner = dynamic(() => import('@/components/QRScanner'), { ssr: false });
 
 type InventoryItem = {
   id: string;
@@ -20,12 +24,14 @@ type Profile = {
   role: string;
 };
 
-export default function CheckOutPage() {
+function CheckOutForm() {
   const supabase = createClient();
+  const searchParams = useSearchParams();
 
   const [itemSearch, setItemSearch] = useState('');
   const [itemResults, setItemResults] = useState<InventoryItem[]>([]);
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
+  const [showScanner, setShowScanner] = useState(false);
 
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [clientFirstName, setClientFirstName] = useState('');
@@ -45,11 +51,34 @@ export default function CheckOutPage() {
     });
   }, []);
 
-  // Item search — by description or UUID
+  // Auto-select item if ?item=UUID is in the URL (from QR code scan)
+  useEffect(() => {
+    const itemId = searchParams.get('item');
+    if (itemId) {
+      loadItemById(itemId);
+    }
+  }, [searchParams]);
+
+  async function loadItemById(itemId: string) {
+    const { data } = await supabase
+      .from('inventory_items')
+      .select('*')
+      .eq('id', itemId)
+      .single();
+    if (data) {
+      setSelectedItem(data);
+      setQuantity(1);
+      setItemSearch('');
+      setItemResults([]);
+    } else {
+      toast.error('Item not found. Please search manually.');
+    }
+  }
+
+  // Item search
   useEffect(() => {
     if (itemSearch.length < 2) { setItemResults([]); return; }
     const timer = setTimeout(async () => {
-      // Check if it looks like a UUID
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       if (uuidRegex.test(itemSearch.trim())) {
         const { data } = await supabase
@@ -71,6 +100,12 @@ export default function CheckOutPage() {
     }, 300);
     return () => clearTimeout(timer);
   }, [itemSearch]);
+
+  function handleQRScan(itemId: string) {
+    setShowScanner(false);
+    loadItemById(itemId);
+    toast.success('Item scanned!');
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -114,7 +149,7 @@ export default function CheckOutPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8 text-center max-w-sm w-full">
-          <div className="w-14 h-14 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: '#fff3e0' }}>
             <span className="text-3xl">📤</span>
           </div>
           <h2 className="text-xl font-bold text-gray-900 mb-2">Check-Out Complete</h2>
@@ -126,7 +161,8 @@ export default function CheckOutPage() {
           </p>
           <button
             onClick={resetForm}
-            className="w-full bg-orange-500 text-white py-3 rounded-xl font-semibold hover:bg-orange-600 transition-colors"
+            className="w-full text-white py-3 rounded-xl font-semibold transition-opacity hover:opacity-90"
+            style={{ backgroundColor: '#f6a03b' }}
           >
             New Check-Out
           </button>
@@ -137,6 +173,13 @@ export default function CheckOutPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-6 pb-28 md:pb-10 max-w-lg mx-auto">
+      {showScanner && (
+        <QRScanner
+          onScan={handleQRScan}
+          onClose={() => setShowScanner(false)}
+        />
+      )}
+
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Check Out Item</h1>
         <p className="text-gray-500 text-sm mt-1">Give an item to a client</p>
@@ -149,16 +192,33 @@ export default function CheckOutPage() {
 
           {!selectedItem ? (
             <>
+              {/* Scan button */}
+              <button
+                type="button"
+                onClick={() => setShowScanner(true)}
+                className="w-full text-white py-3.5 rounded-xl font-semibold text-base mb-4 flex items-center justify-center gap-2 transition-opacity hover:opacity-90"
+                style={{ backgroundColor: '#0063be' }}
+              >
+                📷 Scan QR Code
+              </button>
+
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex-1 h-px bg-gray-200" />
+                <span className="text-xs text-gray-400 font-medium">or search manually</span>
+                <div className="flex-1 h-px bg-gray-200" />
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Search by description, category, or paste item ID
+                  Search by item name or category
                 </label>
                 <input
                   type="text"
                   value={itemSearch}
                   onChange={e => setItemSearch(e.target.value)}
-                  placeholder="e.g., blanket, or paste UUID from QR scan"
-                  className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-400 text-base"
+                  placeholder="e.g., blanket, dishes, hygiene…"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 text-base"
+                  style={{ '--tw-ring-color': '#f6a03b' } as React.CSSProperties}
                 />
               </div>
               {itemResults.length > 0 && (
@@ -325,11 +385,20 @@ export default function CheckOutPage() {
             quantity < 1 ||
             (selectedItem ? quantity > selectedItem.current_quantity : false)
           }
-          className="w-full bg-orange-500 text-white py-3.5 rounded-xl font-semibold text-base hover:bg-orange-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          className="w-full text-white py-3.5 rounded-xl font-semibold text-base disabled:opacity-40 disabled:cursor-not-allowed transition-opacity hover:opacity-90"
+          style={{ backgroundColor: '#f6a03b' }}
         >
           {loading ? 'Recording…' : '📤 Record Check-Out'}
         </button>
       </form>
     </div>
+  );
+}
+
+export default function CheckOutPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center"><p className="text-gray-400">Loading…</p></div>}>
+      <CheckOutForm />
+    </Suspense>
   );
 }
