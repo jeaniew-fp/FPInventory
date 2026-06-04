@@ -38,6 +38,8 @@ export default function CheckInPage() {
   // Step 2 – Item
   const [category, setCategory] = useState('');
   const [description, setDescription] = useState('');
+  const [descriptionResults, setDescriptionResults] = useState<{id: string; description: string; category: string; storage_location: string}[]>([]);
+  const [existingItemId, setExistingItemId] = useState<string | null>(null);
   const [storageLocation, setStorageLocation] = useState('');
   const [condition, setCondition] = useState('');
   const [quantity, setQuantity] = useState(1);
@@ -76,6 +78,21 @@ export default function CheckInPage() {
       setFmvPerUnit(estimateFMV(category, condition));
     }
   }, [category, condition]);
+
+  // Description autocomplete — search existing items
+  useEffect(() => {
+    if (description.length < 2 || existingItemId) { setDescriptionResults([]); return; }
+    const timer = setTimeout(async () => {
+      const { data } = await supabase
+        .from('inventory_items')
+        .select('id, description, category, storage_location')
+        .ilike('description', `%${description}%`)
+        .order('description')
+        .limit(6);
+      setDescriptionResults(data ?? []);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [description, existingItemId]);
 
   function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -135,8 +152,9 @@ export default function CheckInPage() {
         dateReceived,
       });
 
-      // Generate QR code
-      const qr = await QRCode.toDataURL(result.itemId, { width: 256, margin: 2 });
+      // Generate QR code with full checkout URL
+      const checkoutUrl = `${window.location.origin}/check-out?item=${result.itemId}`;
+      const qr = await QRCode.toDataURL(checkoutUrl, { width: 256, margin: 2 });
       setQrDataUrl(qr);
       setSuccessItemId(result.itemId);
       setSuccessDescription(description.trim());
@@ -161,6 +179,7 @@ export default function CheckInPage() {
     setPhotoFile(null); setPhotoPreview(null);
     setDateReceived(format(new Date(), 'yyyy-MM-dd'));
     setSuccessItemId(null); setQrDataUrl(null);
+    setDescriptionResults([]); setExistingItemId(null);
   }
 
   const canProceedStep1 = selectedDonor || (isNewDonor && newDonorName.trim().length > 0);
@@ -183,7 +202,7 @@ export default function CheckInPage() {
             {qrDataUrl && (
               <div className="mb-5">
                 <img src={qrDataUrl} alt="QR code" className="mx-auto w-48 h-48" />
-                <p className="text-xs text-gray-400 mt-2">Scan to find this item in inventory</p>
+                <p className="text-xs text-gray-400 mt-2">📱 Scan to go directly to checkout</p>
               </div>
             )}
 
@@ -385,15 +404,62 @@ export default function CheckInPage() {
                 </select>
               </div>
 
-              <div>
+              <div className="relative">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Description <span className="text-red-500">*</span></label>
-                <input
-                  type="text"
-                  value={description}
-                  onChange={e => setDescription(e.target.value)}
-                  placeholder="e.g., Queen comforter set, blue"
-                  className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-600 text-base"
-                />
+                {existingItemId ? (
+                  <div className="bg-green-50 border border-green-200 rounded-xl p-3 flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-green-900 text-sm">{description}</p>
+                      <p className="text-xs text-green-600">Adding to existing stock — same QR code</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => { setExistingItemId(null); setDescription(''); setCategory(''); setStorageLocation(''); }}
+                      className="text-green-600 hover:text-red-500 text-sm ml-3"
+                    >✕</button>
+                  </div>
+                ) : (
+                  <>
+                    <input
+                      type="text"
+                      value={description}
+                      onChange={e => { setDescription(e.target.value); setExistingItemId(null); }}
+                      placeholder="e.g., Toilet Paper, Shampoo, Blanket…"
+                      className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-600 text-base"
+                    />
+                    {descriptionResults.length > 0 && (
+                      <div className="mt-1 border border-green-200 rounded-xl overflow-hidden shadow-sm bg-white z-10 relative">
+                        <p className="text-xs text-green-700 font-medium px-3 py-2 bg-green-50 border-b border-green-100">
+                          ✓ Existing items — tap to add to current stock
+                        </p>
+                        {descriptionResults.map(item => (
+                          <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => {
+                              setDescription(item.description);
+                              setCategory(item.category);
+                              setStorageLocation(item.storage_location);
+                              setExistingItemId(item.id);
+                              setDescriptionResults([]);
+                            }}
+                            className="w-full text-left px-4 py-3 hover:bg-green-50 border-b border-gray-100 last:border-0 transition-colors"
+                          >
+                            <p className="font-medium text-gray-900 text-sm">{item.description}</p>
+                            <p className="text-xs text-gray-500">{item.category} · {item.storage_location}</p>
+                          </button>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => setDescriptionResults([])}
+                          className="w-full text-left px-4 py-2.5 text-xs text-gray-400 hover:bg-gray-50 border-t border-gray-100"
+                        >
+                          + Create new item instead
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
 
               <div>
