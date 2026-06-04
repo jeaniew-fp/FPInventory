@@ -1,5 +1,5 @@
 'use server';
-import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 import { pushDonationToBloomerang } from '@/lib/bloomerang';
 import { revalidatePath } from 'next/cache';
 
@@ -16,11 +16,7 @@ export async function submitCheckIn(formData: {
   notes?: string;
   dateReceived: string;
 }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  const supabase = createServiceClient();
 
   // Find or create inventory item
   const { data: existing } = await supabase
@@ -55,7 +51,6 @@ export async function submitCheckIn(formData: {
       .single();
     if (insertError || !newItem) throw new Error(insertError?.message ?? 'Failed to create item');
     itemId = newItem.id;
-    // Set QR code to the item's own UUID
     await supabase.from('inventory_items').update({ qr_code: itemId }).eq('id', itemId);
   }
 
@@ -71,7 +66,6 @@ export async function submitCheckIn(formData: {
     photo_url: formData.photoUrl ?? null,
     notes: formData.notes ?? null,
     date_received: formData.dateReceived,
-    created_by: user.id,
   });
   if (ciError) throw new Error(ciError.message);
 

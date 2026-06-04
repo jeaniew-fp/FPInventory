@@ -1,5 +1,5 @@
 'use server';
-import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 import { revalidatePath } from 'next/cache';
 
 export async function submitCheckOut(formData: {
@@ -12,11 +12,7 @@ export async function submitCheckOut(formData: {
   quantity: number;
   dateGiven: string;
 }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  const supabase = createServiceClient();
 
   const { data: item, error: fetchError } = await supabase
     .from('inventory_items')
@@ -37,7 +33,6 @@ export async function submitCheckOut(formData: {
     program: formData.program,
     quantity: formData.quantity,
     date_given: formData.dateGiven,
-    created_by: user.id,
   });
   if (coError) throw new Error(coError.message);
 
