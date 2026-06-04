@@ -29,7 +29,9 @@ export async function updateSession(request: NextRequest) {
 
   if (!user && !request.nextUrl.pathname.startsWith('/login')) {
     const url = request.nextUrl.clone();
+    const redirectTo = request.nextUrl.pathname + request.nextUrl.search;
     url.pathname = '/login';
+    url.searchParams.set('redirect', redirectTo);
     return NextResponse.redirect(url);
   }
 
