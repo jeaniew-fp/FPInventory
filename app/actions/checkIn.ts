@@ -16,8 +16,14 @@ export async function submitCheckIn(formData: {
   photoUrl?: string;
   notes?: string;
   dateReceived: string;
+  // Gift card fields
+  itemType?: string;
+  retailer?: string;
+  faceValue?: number;
 }) {
   const supabase = createServiceClient();
+
+  const isGiftCard = formData.itemType === 'gift_card';
 
   // Find or create inventory item
   const { data: existing } = await supabase
@@ -49,6 +55,9 @@ export async function submitCheckIn(formData: {
         program: formData.program,
         current_quantity: formData.quantity,
         qr_code: '',
+        item_type: formData.itemType ?? 'standard',
+        retailer: formData.retailer ?? null,
+        face_value: formData.faceValue ?? null,
       })
       .select()
       .single();
@@ -72,12 +81,14 @@ export async function submitCheckIn(formData: {
   });
   if (ciError) throw new Error(ciError.message);
 
-  // Attempt Bloomerang sync (non-blocking, failure is OK)
+  // Attempt Bloomerang sync (non-blocking)
   await pushDonationToBloomerang({
     donorBloomerangId: formData.donorBloomerangId,
     amount: totalFmv,
     date: formData.dateReceived,
-    note: `In-kind donation: ${formData.quantity}x ${formData.description} (${formData.condition})`,
+    note: isGiftCard
+      ? `Gift card donation: ${formData.quantity}x ${formData.description}`
+      : `In-kind donation: ${formData.quantity}x ${formData.description} (${formData.condition})`,
   });
 
   revalidatePath('/');

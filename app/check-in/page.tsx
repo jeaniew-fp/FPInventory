@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { ITEM_CATEGORIES, STORAGE_LOCATIONS, CONDITIONS, CHECK_IN_PROGRAMS } from '@/lib/constants';
+import { ITEM_CATEGORIES, STORAGE_LOCATIONS, CONDITIONS, CHECK_IN_PROGRAMS, GIFT_CARD_PURPOSES } from '@/lib/constants';
 import { estimateFMV } from '@/lib/fmv';
 import { submitCheckIn } from '@/app/actions/checkIn';
 import FMVGuidePanel from '@/components/FMVGuidePanel';
@@ -36,6 +36,14 @@ export default function CheckInPage() {
   const [newDonorPhone, setNewDonorPhone] = useState('');
 
   // Step 2 – Item
+  // Item type toggle
+  const [itemType, setItemType] = useState<'standard' | 'gift_card'>('standard');
+
+  // Gift card fields
+  const [retailer, setRetailer] = useState('');
+  const [faceValue, setFaceValue] = useState<number>(0);
+  const [gcPurpose, setGcPurpose] = useState('');
+
   const [program, setProgram] = useState('General');
   const [category, setCategory] = useState('');
   const [description, setDescription] = useState('');
@@ -139,19 +147,29 @@ export default function CheckInPage() {
       const donor = await saveDonorIfNew();
       const photoUrl = await uploadPhoto();
 
+      const isGiftCard = itemType === 'gift_card';
+      const gcDescription = retailer && faceValue
+        ? `${retailer} $${faceValue.toFixed(2)} Gift Card`
+        : `${retailer || 'Gift'} Card`;
+
       const result = await submitCheckIn({
         donorId: donor.id,
         donorBloomerangId: donor.bloomerang_contact_id ?? undefined,
         program,
-        category,
-        description: description.trim(),
+        category: isGiftCard ? 'Gift Cards' : category,
+        description: isGiftCard ? gcDescription : description.trim(),
         storageLocation,
-        condition,
+        condition: isGiftCard ? 'New' : condition,
         quantity,
-        fmvPerUnit,
+        fmvPerUnit: isGiftCard ? faceValue : fmvPerUnit,
         photoUrl,
-        notes: notes.trim() || undefined,
+        notes: isGiftCard
+          ? (gcPurpose ? `Purpose: ${gcPurpose}${notes.trim() ? ` | ${notes.trim()}` : ''}` : notes.trim() || undefined)
+          : notes.trim() || undefined,
         dateReceived,
+        itemType,
+        retailer: isGiftCard ? retailer : undefined,
+        faceValue: isGiftCard ? faceValue : undefined,
       });
 
       // Generate QR code with full checkout URL
@@ -176,6 +194,7 @@ export default function CheckInPage() {
     setSelectedDonor(null);
     setIsNewDonor(false);
     setNewDonorName(''); setNewDonorOrg(''); setNewDonorEmail(''); setNewDonorPhone('');
+    setItemType('standard'); setRetailer(''); setFaceValue(0); setGcPurpose('');
     setProgram('General'); setCategory(''); setDescription(''); setStorageLocation(''); setCondition('');
     setQuantity(1); setFmvPerUnit(0); setNotes('');
     setPhotoFile(null); setPhotoPreview(null);
@@ -185,7 +204,9 @@ export default function CheckInPage() {
   }
 
   const canProceedStep1 = selectedDonor || (isNewDonor && newDonorName.trim().length > 0);
-  const canProceedStep2 = category && description.trim() && storageLocation && condition && quantity > 0 && fmvPerUnit >= 0;
+  const canProceedStep2 = itemType === 'gift_card'
+    ? retailer.trim() && faceValue > 0 && storageLocation && quantity > 0
+    : category && description.trim() && storageLocation && condition && quantity > 0 && fmvPerUnit >= 0;
 
   const donorDisplay = selectedDonor?.name ?? newDonorName;
 
@@ -394,6 +415,84 @@ export default function CheckInPage() {
             <h2 className="font-semibold text-gray-900 mt-3 mb-4">Item Details</h2>
 
             <div className="space-y-4">
+
+              {/* Item Type Toggle */}
+              <div className="flex rounded-xl overflow-hidden border border-gray-300">
+                <button
+                  type="button"
+                  onClick={() => setItemType('standard')}
+                  className={`flex-1 py-2.5 text-sm font-semibold transition-colors ${itemType === 'standard' ? 'text-white' : 'text-gray-600 bg-white hover:bg-gray-50'}`}
+                  style={itemType === 'standard' ? { backgroundColor: '#0063be' } : {}}
+                >
+                  📦 Standard Donation
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setItemType('gift_card')}
+                  className={`flex-1 py-2.5 text-sm font-semibold transition-colors ${itemType === 'gift_card' ? 'text-white' : 'text-gray-600 bg-white hover:bg-gray-50'}`}
+                  style={itemType === 'gift_card' ? { backgroundColor: '#8d4982' } : {}}
+                >
+                  🎁 Gift Card
+                </button>
+              </div>
+
+              {/* Gift Card specific fields */}
+              {itemType === 'gift_card' && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Store / Retailer <span className="text-red-500">*</span></label>
+                    <input
+                      type="text"
+                      value={retailer}
+                      onChange={e => setRetailer(e.target.value)}
+                      placeholder="e.g., Target, Safeway, Chevron…"
+                      className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-600 text-base"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Face Value per Card ($) <span className="text-red-500">*</span></label>
+                      <input
+                        type="number"
+                        min="0.01"
+                        step="0.01"
+                        value={faceValue || ''}
+                        onChange={e => setFaceValue(parseFloat(e.target.value) || 0)}
+                        placeholder="e.g., 25.00"
+                        className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-600 text-base"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Number of Cards <span className="text-red-500">*</span></label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={quantity}
+                        onChange={e => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                        className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-600 text-base"
+                      />
+                    </div>
+                  </div>
+                  {faceValue > 0 && quantity > 0 && (
+                    <div className="bg-purple-50 border border-purple-200 rounded-xl p-3 text-sm text-purple-900">
+                      <span className="font-semibold">Total Value: ${(faceValue * quantity).toFixed(2)}</span>
+                      <span className="text-purple-600 ml-2">({quantity} × ${faceValue.toFixed(2)})</span>
+                    </div>
+                  )}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Intended Purpose</label>
+                    <select
+                      value={gcPurpose}
+                      onChange={e => setGcPurpose(e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-600 text-base bg-white"
+                    >
+                      <option value="">Select purpose (optional)…</option>
+                      {GIFT_CARD_PURPOSES.map(p => <option key={p} value={p}>{p}</option>)}
+                    </select>
+                  </div>
+                </>
+              )}
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Program <span className="text-red-500">*</span></label>
                 <select
@@ -405,6 +504,8 @@ export default function CheckInPage() {
                 </select>
               </div>
 
+              {/* Standard donation fields only */}
+              {itemType === 'standard' && (<>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Category <span className="text-red-500">*</span></label>
                 <select
@@ -539,6 +640,22 @@ export default function CheckInPage() {
                   </p>
                 )}
               </div>
+              </>)} {/* end standard-only fields */}
+
+              {/* Storage Location — shown for all item types */}
+              {itemType === 'gift_card' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Storage Location <span className="text-red-500">*</span></label>
+                  <select
+                    value={storageLocation}
+                    onChange={e => setStorageLocation(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-600 text-base bg-white"
+                  >
+                    <option value="">Select location…</option>
+                    {STORAGE_LOCATIONS.map(l => <option key={l} value={l}>{l}</option>)}
+                  </select>
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Date Received</label>
@@ -599,16 +716,27 @@ export default function CheckInPage() {
 
           {/* Review summary */}
           {canProceedStep2 && (
-            <div className="bg-green-50 border border-green-200 rounded-2xl p-4 text-sm">
-              <p className="font-semibold text-green-900 mb-2">Summary</p>
-              <div className="space-y-1 text-green-800">
+            <div className={`border rounded-2xl p-4 text-sm ${itemType === 'gift_card' ? 'bg-purple-50 border-purple-200' : 'bg-green-50 border-green-200'}`}>
+              <p className={`font-semibold mb-2 ${itemType === 'gift_card' ? 'text-purple-900' : 'text-green-900'}`}>Summary</p>
+              <div className={`space-y-1 ${itemType === 'gift_card' ? 'text-purple-800' : 'text-green-800'}`}>
                 <p><span className="font-medium">Donor:</span> {donorDisplay}</p>
                 <p><span className="font-medium">Program:</span> {program}</p>
-                <p><span className="font-medium">Item:</span> {description}</p>
-                <p><span className="font-medium">Category:</span> {category}</p>
+                {itemType === 'gift_card' ? (
+                  <>
+                    <p><span className="font-medium">Type:</span> 🎁 Gift Card</p>
+                    <p><span className="font-medium">Retailer:</span> {retailer}</p>
+                    <p><span className="font-medium">Cards:</span> {quantity} × ${faceValue?.toFixed(2)} = <strong>${((faceValue ?? 0) * quantity).toFixed(2)}</strong></p>
+                    {gcPurpose && <p><span className="font-medium">Purpose:</span> {gcPurpose}</p>}
+                  </>
+                ) : (
+                  <>
+                    <p><span className="font-medium">Item:</span> {description}</p>
+                    <p><span className="font-medium">Category:</span> {category}</p>
+                    <p><span className="font-medium">Condition:</span> {condition}</p>
+                    <p><span className="font-medium">Qty:</span> {quantity} &nbsp;|&nbsp; <span className="font-medium">FMV:</span> ${(fmvPerUnit * quantity).toFixed(2)}</p>
+                  </>
+                )}
                 <p><span className="font-medium">Location:</span> {storageLocation}</p>
-                <p><span className="font-medium">Condition:</span> {condition}</p>
-                <p><span className="font-medium">Qty:</span> {quantity} &nbsp;|&nbsp; <span className="font-medium">FMV:</span> ${(fmvPerUnit * quantity).toFixed(2)}</p>
               </div>
             </div>
           )}

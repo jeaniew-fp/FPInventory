@@ -12,6 +12,9 @@ type Item = {
   program: string;
   current_quantity: number;
   updated_at: string;
+  item_type?: string;
+  retailer?: string;
+  face_value?: number;
 };
 
 export default function InventoryTable({ items }: { items: Item[] }) {
@@ -19,16 +22,19 @@ export default function InventoryTable({ items }: { items: Item[] }) {
   const [filterCategory, setFilterCategory] = useState('');
   const [filterLocation, setFilterLocation] = useState('');
   const [filterProgram, setFilterProgram] = useState('');
+  const [filterType, setFilterType] = useState(''); // '' | 'standard' | 'gift_card'
 
   const filtered = items.filter(item => {
-    const matchSearch = !search || item.description.toLowerCase().includes(search.toLowerCase());
+    const matchSearch = !search || item.description.toLowerCase().includes(search.toLowerCase()) ||
+      (item.retailer && item.retailer.toLowerCase().includes(search.toLowerCase()));
     const matchCat = !filterCategory || item.category === filterCategory;
     const matchLoc = !filterLocation || item.storage_location === filterLocation;
     const matchProg = !filterProgram || item.program === filterProgram;
-    return matchSearch && matchCat && matchLoc && matchProg;
+    const matchType = !filterType || (filterType === 'gift_card' ? item.item_type === 'gift_card' : item.item_type !== 'gift_card');
+    return matchSearch && matchCat && matchLoc && matchProg && matchType;
   });
 
-  const hasFilters = search || filterCategory || filterLocation || filterProgram;
+  const hasFilters = search || filterCategory || filterLocation || filterProgram || filterType;
 
   return (
     <div className="space-y-4">
@@ -59,17 +65,28 @@ export default function InventoryTable({ items }: { items: Item[] }) {
             {STORAGE_LOCATIONS.map(l => <option key={l} value={l}>{l}</option>)}
           </select>
         </div>
-        <select
-          value={filterProgram}
-          onChange={e => setFilterProgram(e.target.value)}
-          className="w-full px-3 py-2.5 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-600 text-sm bg-white"
-        >
-          <option value="">All Programs</option>
-          {CHECK_IN_PROGRAMS.map(p => <option key={p} value={p}>{p}</option>)}
-        </select>
+        <div className="grid grid-cols-2 gap-3">
+          <select
+            value={filterProgram}
+            onChange={e => setFilterProgram(e.target.value)}
+            className="px-3 py-2.5 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-600 text-sm bg-white"
+          >
+            <option value="">All Programs</option>
+            {CHECK_IN_PROGRAMS.map(p => <option key={p} value={p}>{p}</option>)}
+          </select>
+          <select
+            value={filterType}
+            onChange={e => setFilterType(e.target.value)}
+            className="px-3 py-2.5 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-600 text-sm bg-white"
+          >
+            <option value="">All Item Types</option>
+            <option value="standard">Standard Donations</option>
+            <option value="gift_card">🎁 Gift Cards</option>
+          </select>
+        </div>
         {hasFilters && (
           <button
-            onClick={() => { setSearch(''); setFilterCategory(''); setFilterLocation(''); setFilterProgram(''); }}
+            onClick={() => { setSearch(''); setFilterCategory(''); setFilterLocation(''); setFilterProgram(''); setFilterType(''); }}
             className="text-xs text-gray-500 hover:text-red-500 underline"
           >
             Clear filters ({filtered.length} result{filtered.length !== 1 ? 's' : ''})
@@ -87,10 +104,15 @@ export default function InventoryTable({ items }: { items: Item[] }) {
         ) : (
           filtered.map(item => (
             <Link key={item.id} href={`/inventory/${item.id}`}>
-              <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm hover:border-green-300 transition-colors">
+              <div className={`bg-white rounded-2xl border p-4 shadow-sm transition-colors ${item.item_type === 'gift_card' ? 'border-purple-200 hover:border-purple-300' : 'border-gray-200 hover:border-green-300'}`}>
                 <div className="flex justify-between items-start">
                   <div className="flex-1 min-w-0 pr-3">
-                    <p className="font-semibold text-gray-900 text-sm leading-tight">{item.description}</p>
+                    <p className="font-semibold text-gray-900 text-sm leading-tight">
+                      {item.item_type === 'gift_card' ? '🎁 ' : ''}{item.description}
+                    </p>
+                    {item.item_type === 'gift_card' && item.retailer && (
+                      <p className="text-xs text-purple-700 mt-0.5 font-medium">{item.retailer}{item.face_value ? ` · $${item.face_value.toFixed(2)} ea` : ''}</p>
+                    )}
                     <p className="text-xs text-gray-500 mt-0.5">{item.category}</p>
                     <p className="text-xs text-gray-400 mt-0.5">{item.storage_location}</p>
                     {item.program && (
@@ -146,7 +168,12 @@ export default function InventoryTable({ items }: { items: Item[] }) {
                   className="hover:bg-gray-50 cursor-pointer transition-colors"
                   onClick={() => window.location.href = `/inventory/${item.id}`}
                 >
-                  <td className="px-5 py-3.5 font-medium text-gray-900 text-sm">{item.description}</td>
+                  <td className="px-5 py-3.5 font-medium text-gray-900 text-sm">
+                    {item.item_type === 'gift_card' ? '🎁 ' : ''}{item.description}
+                    {item.item_type === 'gift_card' && item.retailer && (
+                      <span className="block text-xs text-purple-600 font-normal">{item.retailer}{item.face_value ? ` · $${item.face_value.toFixed(2)} ea` : ''}</span>
+                    )}
+                  </td>
                   <td className="px-5 py-3.5 text-sm text-gray-600">{item.category}</td>
                   <td className="px-5 py-3.5 text-sm text-gray-600">{item.storage_location}</td>
                   <td className="px-5 py-3.5 text-sm">

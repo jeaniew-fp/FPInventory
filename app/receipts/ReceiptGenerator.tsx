@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
-import { sendReceiptEmail } from '@/app/actions/receipt';
+// import { sendReceiptEmail } from '@/app/actions/receipt'; // email not yet configured
 
 type CheckInRow = {
   id: string;
@@ -36,10 +36,8 @@ type DonorResult = {
 
 export default function ReceiptGenerator({
   staffName,
-  staffEmail,
 }: {
   staffName: string;
-  staffEmail: string;
 }) {
   const supabase = createClient();
 
@@ -57,9 +55,6 @@ export default function ReceiptGenerator({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [loadingCheckIns, setLoadingCheckIns] = useState(false);
 
-  // Email
-  const [sendingEmail, setSendingEmail] = useState(false);
-  const [emailTo, setEmailTo] = useState('');
 
   // Donor search autocomplete
   useEffect(() => {
@@ -271,40 +266,6 @@ export default function ReceiptGenerator({
     return doc.output('datauristring');
   }
 
-  async function handleEmail() {
-    if (!selected.length) { toast.error('Please select at least one donation'); return; }
-    if (!emailTo) { toast.error('Please enter an email address'); return; }
-
-    setSendingEmail(true);
-    try {
-      const pdfDataUri = await generatePDF(false);
-      if (!pdfDataUri) return;
-
-      const base64 = pdfDataUri.split(',')[1];
-      const donorName = selectedDonor?.name ?? 'Donor';
-      const filename = `FPGWC-Receipt-${donorName.replace(/\s+/g, '-')}-${dateFrom}.pdf`;
-
-      const result = await sendReceiptEmail({
-        to: emailTo,
-        staffEmail,
-        donorName,
-        dateStr: format(new Date(dateFrom), 'MMMM d, yyyy'),
-        pdfBase64: base64,
-        filename,
-        totalFmv,
-      });
-
-      if (!result.success) {
-        toast.error(result.error ?? 'Failed to send email');
-        return;
-      }
-      toast.success(`Receipt emailed to ${emailTo}!`);
-    } catch (err) {
-      toast.error((err as Error).message);
-    } finally {
-      setSendingEmail(false);
-    }
-  }
 
   return (
     <div className="space-y-5 max-w-2xl">

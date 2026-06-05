@@ -23,7 +23,7 @@ export default async function ReceiptsPage() {
             Search donations by donor and generate in-kind donation receipts
           </p>
         </div>
-        <ReceiptGenerator staffName={profile?.full_name ?? ''} staffEmail={user.email ?? ''} />
+        <ReceiptGenerator staffName={profile?.full_name ?? ''} />
       </div>
     </Layout>
   );

@@ -2,7 +2,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { PROGRAMS } from '@/lib/constants';
+import { PROGRAMS, GIFT_CARD_PURPOSES, SHELTER_LOCATIONS_GC } from '@/lib/constants';
 import { submitCheckOut } from '@/app/actions/checkOut';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
@@ -16,6 +16,9 @@ type InventoryItem = {
   category: string;
   storage_location: string;
   current_quantity: number;
+  item_type?: string;
+  retailer?: string;
+  face_value?: number;
 };
 
 type Profile = {
@@ -42,8 +45,26 @@ function CheckOutForm() {
   const [quantity, setQuantity] = useState(1);
   const [dateGiven, setDateGiven] = useState(format(new Date(), 'yyyy-MM-dd'));
 
+  // Gift card specific fields
+  const [familySize, setFamilySize] = useState<number>(1);
+  const [shelterLocation, setShelterLocation] = useState('');
+  const [giftCardPurpose, setGiftCardPurpose] = useState('');
+
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [submittedData, setSubmittedData] = useState<{
+    item: InventoryItem;
+    clientFirstName: string;
+    clientLastName: string;
+    quantity: number;
+    dateGiven: string;
+    caseManagerName: string;
+    familySize?: number;
+    shelterLocation?: string;
+    giftCardPurpose?: string;
+  } | null>(null);
+
+  const isGiftCard = selectedItem?.item_type === 'gift_card';
 
   useEffect(() => {
     supabase.from('profiles').select('id, full_name, role').then(({ data }) => {
@@ -121,6 +142,21 @@ function CheckOutForm() {
         program,
         quantity,
         dateGiven,
+        familySize: isGiftCard ? familySize : undefined,
+        shelterLocation: isGiftCard ? shelterLocation : undefined,
+        giftCardPurpose: isGiftCard ? giftCardPurpose : undefined,
+      });
+      const caseManagerName = profiles.find(p => p.id === caseManagerId)?.full_name ?? '';
+      setSubmittedData({
+        item: selectedItem,
+        clientFirstName: clientFirstName.trim(),
+        clientLastName: clientLastName.trim(),
+        quantity,
+        dateGiven,
+        caseManagerName,
+        familySize: isGiftCard ? familySize : undefined,
+        shelterLocation: isGiftCard ? shelterLocation : undefined,
+        giftCardPurpose: isGiftCard ? giftCardPurpose : undefined,
       });
       setSuccess(true);
       toast.success('Check-out recorded!');
@@ -142,30 +178,209 @@ function CheckOutForm() {
     setProgram('');
     setQuantity(1);
     setDateGiven(format(new Date(), 'yyyy-MM-dd'));
+    setFamilySize(1);
+    setShelterLocation('');
+    setGiftCardPurpose('');
     setSuccess(false);
+    setSubmittedData(null);
   }
 
-  if (success) {
+  async function handlePrintReceipt() {
+    if (!submittedData) return;
+    const { default: jsPDF } = await import('jspdf');
+
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter' });
+    const pageW = 612;
+    const margin = 40;
+    const contentW = pageW - margin * 2;
+
+    // Header bar
+    doc.setFillColor(0, 99, 190); // FPGWC blue
+    doc.rect(0, 0, pageW, 60, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Family Promise of Greater Washington County', pageW / 2, 24, { align: 'center' });
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Client Gift Card Receipt', pageW / 2, 44, { align: 'center' });
+
+    // Reset text color
+    doc.setTextColor(30, 30, 30);
+
+    let y = 80;
+
+    // Date line
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Date: ${format(new Date(submittedData.dateGiven + 'T12:00:00'), 'MMMM d, yyyy')}`, margin, y);
+    y += 20;
+
+    // Divider
+    doc.setDrawColor(200, 200, 200);
+    doc.line(margin, y, pageW - margin, y);
+    y += 16;
+
+    // Section: Client Information
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 99, 190);
+    doc.text('CLIENT INFORMATION', margin, y);
+    y += 14;
+    doc.setTextColor(30, 30, 30);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+
+    function labelValue(label: string, value: string, xOffset = 0) {
+      doc.setFont('helvetica', 'bold');
+      doc.text(`${label}:`, margin + xOffset, y);
+      doc.setFont('helvetica', 'normal');
+      doc.text(value, margin + xOffset + 90, y);
+      y += 16;
+    }
+
+    labelValue('Client Name', `${submittedData.clientFirstName} ${submittedData.clientLastName}`);
+    if (submittedData.shelterLocation) labelValue('Shelter Location', submittedData.shelterLocation);
+    if (submittedData.familySize) labelValue('Family Size', `${submittedData.familySize} person${submittedData.familySize !== 1 ? 's' : ''}`);
+    labelValue('Program', submittedData.item.category || 'Gift Cards');
+
+    y += 6;
+    doc.line(margin, y, pageW - margin, y);
+    y += 16;
+
+    // Section: Gift Card Details
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 99, 190);
+    doc.text('GIFT CARD DETAILS', margin, y);
+    y += 14;
+    doc.setTextColor(30, 30, 30);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+
+    const retailer = submittedData.item.retailer ?? 'Gift Card';
+    const faceValue = submittedData.item.face_value ?? 0;
+    const qty = submittedData.quantity;
+    const totalValue = faceValue * qty;
+
+    labelValue('Retailer / Store', retailer);
+    labelValue('Face Value per Card', `$${faceValue.toFixed(2)}`);
+    labelValue('Number of Cards', `${qty}`);
+
+    // Total value highlight box
+    doc.setFillColor(240, 247, 255);
+    doc.setDrawColor(0, 99, 190);
+    doc.roundedRect(margin, y, contentW, 28, 4, 4, 'FD');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.setTextColor(0, 99, 190);
+    doc.text(`Total Value Given: $${totalValue.toFixed(2)}`, pageW / 2, y + 18, { align: 'center' });
+    y += 40;
+    doc.setTextColor(30, 30, 30);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+
+    if (submittedData.giftCardPurpose) {
+      labelValue('Purpose', submittedData.giftCardPurpose);
+    }
+
+    y += 6;
+    doc.line(margin, y, pageW - margin, y);
+    y += 16;
+
+    // Section: Staff Information
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 99, 190);
+    doc.text('STAFF INFORMATION', margin, y);
+    y += 14;
+    doc.setTextColor(30, 30, 30);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+
+    labelValue('Staff / Case Manager', submittedData.caseManagerName);
+
+    y += 20;
+
+    // Signature lines
+    const sigY = y;
+    // Client signature
+    doc.setDrawColor(80, 80, 80);
+    doc.line(margin, sigY + 30, margin + 200, sigY + 30);
+    doc.setFontSize(8);
+    doc.setTextColor(100, 100, 100);
+    doc.text('Client Signature', margin, sigY + 42);
+    doc.text('Date', margin + 160, sigY + 42);
+
+    // Staff signature
+    const sig2X = margin + 260;
+    doc.line(sig2X, sigY + 30, sig2X + 200, sigY + 30);
+    doc.text('Staff Signature', sig2X, sigY + 42);
+    doc.text('Date', sig2X + 160, sigY + 42);
+
+    y = sigY + 60;
+
+    // Footer
+    doc.setFillColor(245, 245, 245);
+    doc.rect(0, 792 - 40, pageW, 40, 'F');
+    doc.setFontSize(8);
+    doc.setTextColor(120, 120, 120);
+    doc.text(
+      'Family Promise of Greater Washington County  ·  This receipt confirms the distribution of gift card(s) to the above-named client.',
+      pageW / 2,
+      792 - 24,
+      { align: 'center' }
+    );
+    doc.text('Please retain a copy for your records.', pageW / 2, 792 - 12, { align: 'center' });
+
+    const filename = `GiftCard_Receipt_${submittedData.clientLastName}_${format(new Date(submittedData.dateGiven + 'T12:00:00'), 'yyyy-MM-dd')}.pdf`;
+    doc.save(filename);
+  }
+
+  if (success && submittedData) {
+    const isGC = submittedData.item.item_type === 'gift_card';
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8 text-center max-w-sm w-full">
-          <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: '#fff3e0' }}>
-            <span className="text-3xl">📤</span>
+          <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: isGC ? '#f3e8ff' : '#fff3e0' }}>
+            <span className="text-3xl">{isGC ? '🎁' : '📤'}</span>
           </div>
           <h2 className="text-xl font-bold text-gray-900 mb-2">Check-Out Complete</h2>
-          <p className="text-gray-500 text-sm mb-2">
-            {quantity}x <strong>{selectedItem?.description}</strong>
-          </p>
+          {isGC ? (
+            <>
+              <p className="text-gray-500 text-sm mb-1">
+                {submittedData.quantity}x <strong>{submittedData.item.retailer}</strong> gift card{submittedData.quantity !== 1 ? 's' : ''}
+              </p>
+              <p className="text-purple-700 font-semibold text-sm mb-1">
+                Total: ${((submittedData.item.face_value ?? 0) * submittedData.quantity).toFixed(2)}
+              </p>
+            </>
+          ) : (
+            <p className="text-gray-500 text-sm mb-1">
+              {submittedData.quantity}x <strong>{submittedData.item.description}</strong>
+            </p>
+          )}
           <p className="text-gray-500 text-sm mb-6">
-            given to <strong>{clientFirstName} {clientLastName}</strong>
+            given to <strong>{submittedData.clientFirstName} {submittedData.clientLastName}</strong>
           </p>
-          <button
-            onClick={resetForm}
-            className="w-full text-white py-3 rounded-xl font-semibold transition-opacity hover:opacity-90"
-            style={{ backgroundColor: '#f6a03b' }}
-          >
-            New Check-Out
-          </button>
+          <div className="space-y-3">
+            {isGC && (
+              <button
+                onClick={handlePrintReceipt}
+                className="w-full text-white py-3 rounded-xl font-semibold transition-opacity hover:opacity-90"
+                style={{ backgroundColor: '#0063be' }}
+              >
+                🖨️ Print Client Receipt
+              </button>
+            )}
+            <button
+              onClick={resetForm}
+              className="w-full text-white py-3 rounded-xl font-semibold transition-opacity hover:opacity-90"
+              style={{ backgroundColor: '#f6a03b' }}
+            >
+              New Check-Out
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -216,7 +431,7 @@ function CheckOutForm() {
                   type="text"
                   value={itemSearch}
                   onChange={e => setItemSearch(e.target.value)}
-                  placeholder="e.g., blanket, dishes, hygiene…"
+                  placeholder="e.g., blanket, dishes, hygiene, gift card…"
                   className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 text-base"
                   style={{ '--tw-ring-color': '#f6a03b' } as React.CSSProperties}
                 />
@@ -237,7 +452,9 @@ function CheckOutForm() {
                     >
                       <div className="flex justify-between items-start">
                         <div>
-                          <p className="font-medium text-gray-900 text-sm">{item.description}</p>
+                          <p className="font-medium text-gray-900 text-sm">
+                            {item.item_type === 'gift_card' ? '🎁 ' : ''}{item.description}
+                          </p>
                           <p className="text-xs text-gray-500">{item.category} · {item.storage_location}</p>
                         </div>
                         <span className={`text-xs font-semibold px-2 py-1 rounded-full ml-2 ${
@@ -259,19 +476,23 @@ function CheckOutForm() {
               )}
             </>
           ) : (
-            <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 flex items-start justify-between">
+            <div className={`border rounded-xl p-4 flex items-start justify-between ${isGiftCard ? 'bg-purple-50 border-purple-200' : 'bg-orange-50 border-orange-200'}`}>
               <div>
-                <p className="font-semibold text-orange-900">{selectedItem.description}</p>
-                <p className="text-sm text-orange-700">{selectedItem.category}</p>
-                <p className="text-xs text-orange-600">{selectedItem.storage_location}</p>
-                <p className="text-sm font-medium text-orange-800 mt-1">
+                <p className={`font-semibold ${isGiftCard ? 'text-purple-900' : 'text-orange-900'}`}>
+                  {isGiftCard ? '🎁 ' : ''}{selectedItem.description}
+                </p>
+                {isGiftCard && selectedItem.face_value && (
+                  <p className="text-sm text-purple-700">${selectedItem.face_value.toFixed(2)} per card</p>
+                )}
+                <p className={`text-xs mt-0.5 ${isGiftCard ? 'text-purple-600' : 'text-orange-600'}`}>{selectedItem.storage_location}</p>
+                <p className={`text-sm font-medium mt-1 ${isGiftCard ? 'text-purple-800' : 'text-orange-800'}`}>
                   {selectedItem.current_quantity} available
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setSelectedItem(null)}
-                className="text-orange-500 hover:text-red-500 ml-3 text-sm"
+                className={`ml-3 text-sm ${isGiftCard ? 'text-purple-500 hover:text-red-500' : 'text-orange-500 hover:text-red-500'}`}
               >
                 ✕
               </button>
@@ -345,32 +566,118 @@ function CheckOutForm() {
             </select>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Quantity <span className="text-red-500">*</span></label>
-              <input
-                type="number"
-                required
-                min="1"
-                max={selectedItem?.current_quantity ?? 999}
-                value={quantity}
-                onChange={e => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-400 text-base"
-              />
-              {selectedItem && quantity > selectedItem.current_quantity && (
-                <p className="text-xs text-red-500 mt-1">Exceeds available quantity</p>
+          {/* Gift card specific fields */}
+          {isGiftCard && (
+            <>
+              <div className="h-px bg-purple-100" />
+              <p className="text-xs font-semibold text-purple-700 uppercase tracking-wide">Gift Card Details</p>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Number of Cards <span className="text-red-500">*</span></label>
+                  <input
+                    type="number"
+                    required
+                    min="1"
+                    max={selectedItem?.current_quantity ?? 999}
+                    value={quantity}
+                    onChange={e => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-400 text-base"
+                  />
+                  {selectedItem && quantity > selectedItem.current_quantity && (
+                    <p className="text-xs text-red-500 mt-1">Exceeds available quantity</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Family Size <span className="text-red-500">*</span></label>
+                  <input
+                    type="number"
+                    required
+                    min="1"
+                    value={familySize}
+                    onChange={e => setFamilySize(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-400 text-base"
+                  />
+                </div>
+              </div>
+
+              {selectedItem?.face_value && quantity > 0 && (
+                <div className="bg-purple-50 border border-purple-200 rounded-xl p-3 text-sm text-purple-900 text-center">
+                  <span className="font-semibold">Total Value: ${(selectedItem.face_value * quantity).toFixed(2)}</span>
+                  <span className="text-purple-600 ml-2">({quantity} × ${selectedItem.face_value.toFixed(2)})</span>
+                </div>
               )}
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Shelter Location <span className="text-red-500">*</span></label>
+                <select
+                  required
+                  value={shelterLocation}
+                  onChange={e => setShelterLocation(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-400 text-base bg-white"
+                >
+                  <option value="">Select location…</option>
+                  {SHELTER_LOCATIONS_GC.map(l => <option key={l} value={l}>{l}</option>)}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Purpose <span className="text-red-500">*</span></label>
+                <select
+                  required
+                  value={giftCardPurpose}
+                  onChange={e => setGiftCardPurpose(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-400 text-base bg-white"
+                >
+                  <option value="">Select purpose…</option>
+                  {GIFT_CARD_PURPOSES.map(p => <option key={p} value={p}>{p}</option>)}
+                </select>
+              </div>
+            </>
+          )}
+
+          {/* Standard item quantity + date */}
+          {!isGiftCard && (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Quantity <span className="text-red-500">*</span></label>
+                <input
+                  type="number"
+                  required
+                  min="1"
+                  max={selectedItem?.current_quantity ?? 999}
+                  value={quantity}
+                  onChange={e => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-400 text-base"
+                />
+                {selectedItem && quantity > selectedItem.current_quantity && (
+                  <p className="text-xs text-red-500 mt-1">Exceeds available quantity</p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Date Given</label>
+                <input
+                  type="date"
+                  value={dateGiven}
+                  onChange={e => setDateGiven(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-400 text-base"
+                />
+              </div>
             </div>
+          )}
+
+          {/* Date given for gift cards (full width) */}
+          {isGiftCard && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Date Given</label>
               <input
                 type="date"
                 value={dateGiven}
                 onChange={e => setDateGiven(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-400 text-base"
+                className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-400 text-base"
               />
             </div>
-          </div>
+          )}
         </div>
 
         <button
@@ -383,12 +690,13 @@ function CheckOutForm() {
             !caseManagerId ||
             !program ||
             quantity < 1 ||
-            (selectedItem ? quantity > selectedItem.current_quantity : false)
+            (selectedItem ? quantity > selectedItem.current_quantity : false) ||
+            (isGiftCard && (!shelterLocation || !giftCardPurpose))
           }
           className="w-full text-white py-3.5 rounded-xl font-semibold text-base disabled:opacity-40 disabled:cursor-not-allowed transition-opacity hover:opacity-90"
-          style={{ backgroundColor: '#f6a03b' }}
+          style={{ backgroundColor: isGiftCard ? '#7c3aed' : '#f6a03b' }}
         >
-          {loading ? 'Recording…' : '📤 Record Check-Out'}
+          {loading ? 'Recording…' : isGiftCard ? '🎁 Record Gift Card Check-Out' : '📤 Record Check-Out'}
         </button>
       </form>
     </div>

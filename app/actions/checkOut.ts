@@ -11,6 +11,10 @@ export async function submitCheckOut(formData: {
   program: string;
   quantity: number;
   dateGiven: string;
+  // Gift card fields
+  familySize?: number;
+  shelterLocation?: string;
+  giftCardPurpose?: string;
 }) {
   const supabase = createServiceClient();
 
@@ -33,6 +37,9 @@ export async function submitCheckOut(formData: {
     program: formData.program,
     quantity: formData.quantity,
     date_given: formData.dateGiven,
+    family_size: formData.familySize ?? null,
+    shelter_location: formData.shelterLocation ?? null,
+    gift_card_purpose: formData.giftCardPurpose ?? null,
   });
   if (coError) throw new Error(coError.message);
 

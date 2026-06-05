@@ -21,4 +21,18 @@ export const STORAGE_LOCATIONS = [
 
 export const PROGRAMS = ['Shelter', 'Prevention', 'Beaverton Buddies', 'Stabilization'];
 export const CHECK_IN_PROGRAMS = ['General', 'Shelter', 'Prevention', 'Beaverton Buddies', 'Stabilization'];
+export const GIFT_CARD_PURPOSES = [
+  'Groceries',
+  'Gas / Transportation',
+  'Clothing',
+  'Baby & Children Supplies',
+  'School Supplies',
+  'Household Items',
+  'Medical / Pharmacy',
+  'Personal Care',
+  'Restaurant / Food',
+  'General Use',
+  'Other',
+];
+export const SHELTER_LOCATIONS_GC = ['Beaverton', 'Hillsboro'];
 export const CONDITIONS = ['New', 'Used - Good', 'Used - Fair'];
