@@ -284,7 +284,7 @@ export default function ReceiptGenerator({
       const donorName = selectedDonor?.name ?? 'Donor';
       const filename = `FPGWC-Receipt-${donorName.replace(/\s+/g, '-')}-${dateFrom}.pdf`;
 
-      await sendReceiptEmail({
+      const result = await sendReceiptEmail({
         to: emailTo,
         staffEmail,
         donorName,
@@ -294,6 +294,10 @@ export default function ReceiptGenerator({
         totalFmv,
       });
 
+      if (!result.success) {
+        toast.error(result.error ?? 'Failed to send email');
+        return;
+      }
       toast.success(`Receipt emailed to ${emailTo}!`);
     } catch (err) {
       toast.error((err as Error).message);
@@ -432,31 +436,6 @@ export default function ReceiptGenerator({
           >
             📄 Download PDF Receipt
           </button>
-
-          <div className="border-t border-gray-100 pt-4">
-            <p className="text-sm font-medium text-gray-700 mb-2">Email Receipt</p>
-            <div className="flex gap-2">
-              <input
-                type="email"
-                value={emailTo}
-                onChange={e => setEmailTo(e.target.value)}
-                placeholder="donor@example.com"
-                className="flex-1 px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 text-base"
-                style={{ '--tw-ring-color': '#8d4982' } as React.CSSProperties}
-              />
-              <button
-                onClick={handleEmail}
-                disabled={sendingEmail || !emailTo}
-                className="text-white px-4 py-3 rounded-xl font-semibold disabled:opacity-40 transition-opacity hover:opacity-90 whitespace-nowrap"
-                style={{ backgroundColor: '#f6a03b' }}
-              >
-                {sendingEmail ? 'Sending…' : '📧 Send'}
-              </button>
-            </div>
-            <p className="text-xs text-gray-400 mt-2">
-              A copy will also be sent to {staffEmail}
-            </p>
-          </div>
         </div>
       )}
     </div>
