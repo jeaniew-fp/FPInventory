@@ -44,6 +44,16 @@ export default function Nav({ role }: { role: string }) {
               {item.label}
             </Link>
           ))}
+          {(role === 'admin' || role === 'coordinator') && (
+            <Link
+              href="/receipts"
+              className={`text-sm font-medium transition-colors ${
+                pathname === '/receipts' ? 'text-yellow-300' : 'text-purple-100 hover:text-white'
+              }`}
+            >
+              Receipts
+            </Link>
+          )}
           {role === 'admin' && (
             <>
               <Link
@@ -116,6 +126,16 @@ export default function Nav({ role }: { role: string }) {
             {item.label}
           </Link>
         ))}
+        {(role === 'admin' || role === 'coordinator') && (
+          <Link
+            href="/receipts"
+            className="flex-1 flex flex-col items-center py-3 text-xs font-medium transition-colors"
+            style={{ color: pathname === '/receipts' ? '#8d4982' : '#6b7280' }}
+          >
+            <span className="text-xl mb-0.5">🧾</span>
+            Receipts
+          </Link>
+        )}
         {role === 'admin' && (
           <Link
             href="/reports"
