@@ -1,6 +1,6 @@
 'use client';
 import { useState, useTransition } from 'react';
-import { inviteUser, updateUserRole } from '@/app/actions/admin';
+import { inviteUser, updateUserRole, setUserPassword } from '@/app/actions/admin';
 import toast from 'react-hot-toast';
 
 type Profile = {
@@ -34,6 +34,12 @@ export default function AdminPanel({ profiles }: { profiles: Profile[] }) {
   const [inviteRole, setInviteRole] = useState('case_manager');
   const [inviteLoading, setInviteLoading] = useState(false);
 
+  // Password reset
+  const [resetUserId, setResetUserId] = useState<string | null>(null);
+  const [resetUserName, setResetUserName] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
+
   async function handleRoleChange(userId: string, newRole: string) {
     startTransition(async () => {
       try {
@@ -44,6 +50,24 @@ export default function AdminPanel({ profiles }: { profiles: Profile[] }) {
         toast.error((err as Error).message);
       }
     });
+  }
+
+  async function handleResetPassword(e: React.FormEvent) {
+    e.preventDefault();
+    if (!resetUserId || !newPassword.trim()) return;
+    if (newPassword.length < 6) { toast.error('Password must be at least 6 characters'); return; }
+    setResetLoading(true);
+    try {
+      await setUserPassword(resetUserId, newPassword.trim());
+      toast.success(`Password updated for ${resetUserName}`);
+      setResetUserId(null);
+      setResetUserName('');
+      setNewPassword('');
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setResetLoading(false);
+    }
   }
 
   async function handleInvite(e: React.FormEvent) {
@@ -83,7 +107,7 @@ export default function AdminPanel({ profiles }: { profiles: Profile[] }) {
                     {ROLE_LABELS[profile.role] ?? profile.role}
                   </span>
                 </div>
-                <div>
+                <div className="flex items-center gap-2">
                   <select
                     value={profile.role}
                     onChange={e => handleRoleChange(profile.id, e.target.value)}
@@ -94,6 +118,12 @@ export default function AdminPanel({ profiles }: { profiles: Profile[] }) {
                       <option key={r} value={r}>{ROLE_LABELS[r]}</option>
                     ))}
                   </select>
+                  <button
+                    onClick={() => { setResetUserId(profile.id); setResetUserName(profile.full_name); setNewPassword(''); }}
+                    className="text-xs text-purple-700 border border-purple-200 px-2 py-1.5 rounded-lg hover:bg-purple-50 transition-colors whitespace-nowrap"
+                  >
+                    Set Password
+                  </button>
                 </div>
               </div>
             ))}
@@ -150,6 +180,48 @@ export default function AdminPanel({ profiles }: { profiles: Profile[] }) {
           </button>
         </form>
       </div>
+
+      {/* Set Password Modal */}
+      {resetUserId && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm">
+            <h3 className="font-semibold text-gray-900 mb-1">Set Password</h3>
+            <p className="text-sm text-gray-500 mb-4">Set a new password for <strong>{resetUserName}</strong></p>
+            <form onSubmit={handleResetPassword} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  value={newPassword}
+                  onChange={e => setNewPassword(e.target.value)}
+                  placeholder="Minimum 6 characters"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-600 text-base"
+                  autoFocus
+                />
+              </div>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => { setResetUserId(null); setNewPassword(''); }}
+                  className="flex-1 border border-gray-300 text-gray-700 py-2.5 rounded-xl font-medium hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={resetLoading}
+                  className="flex-1 text-white py-2.5 rounded-xl font-medium disabled:opacity-50"
+                  style={{ backgroundColor: '#8d4982' }}
+                >
+                  {resetLoading ? 'Saving…' : 'Save Password'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Role descriptions */}
       <div className="bg-gray-50 rounded-2xl border border-gray-200 p-5">

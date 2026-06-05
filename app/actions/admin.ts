@@ -32,6 +32,12 @@ export async function inviteUser(email: string, fullName: string, role: string) 
   if (error) throw new Error(error.message);
 }
 
+export async function setUserPassword(userId: string, password: string) {
+  const supabase = await createAdminClient();
+  const { error } = await supabase.auth.admin.updateUserById(userId, { password });
+  if (error) throw new Error(error.message);
+}
+
 export async function updateUserRole(userId: string, role: string) {
   const supabase = await createAdminClient();
   const { error } = await supabase
