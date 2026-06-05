@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { ITEM_CATEGORIES, STORAGE_LOCATIONS, CONDITIONS } from '@/lib/constants';
+import { ITEM_CATEGORIES, STORAGE_LOCATIONS, CONDITIONS, CHECK_IN_PROGRAMS } from '@/lib/constants';
 import { estimateFMV } from '@/lib/fmv';
 import { submitCheckIn } from '@/app/actions/checkIn';
 import FMVGuidePanel from '@/components/FMVGuidePanel';
@@ -36,6 +36,7 @@ export default function CheckInPage() {
   const [newDonorPhone, setNewDonorPhone] = useState('');
 
   // Step 2 – Item
+  const [program, setProgram] = useState('General');
   const [category, setCategory] = useState('');
   const [description, setDescription] = useState('');
   const [descriptionResults, setDescriptionResults] = useState<{id: string; description: string; category: string; storage_location: string}[]>([]);
@@ -141,6 +142,7 @@ export default function CheckInPage() {
       const result = await submitCheckIn({
         donorId: donor.id,
         donorBloomerangId: donor.bloomerang_contact_id ?? undefined,
+        program,
         category,
         description: description.trim(),
         storageLocation,
@@ -174,7 +176,7 @@ export default function CheckInPage() {
     setSelectedDonor(null);
     setIsNewDonor(false);
     setNewDonorName(''); setNewDonorOrg(''); setNewDonorEmail(''); setNewDonorPhone('');
-    setCategory(''); setDescription(''); setStorageLocation(''); setCondition('');
+    setProgram('General'); setCategory(''); setDescription(''); setStorageLocation(''); setCondition('');
     setQuantity(1); setFmvPerUnit(0); setNotes('');
     setPhotoFile(null); setPhotoPreview(null);
     setDateReceived(format(new Date(), 'yyyy-MM-dd'));
@@ -393,6 +395,17 @@ export default function CheckInPage() {
 
             <div className="space-y-4">
               <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Program <span className="text-red-500">*</span></label>
+                <select
+                  value={program}
+                  onChange={e => setProgram(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-600 text-base bg-white"
+                >
+                  {CHECK_IN_PROGRAMS.map(p => <option key={p} value={p}>{p}</option>)}
+                </select>
+              </div>
+
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Category <span className="text-red-500">*</span></label>
                 <select
                   value={category}
@@ -590,6 +603,7 @@ export default function CheckInPage() {
               <p className="font-semibold text-green-900 mb-2">Summary</p>
               <div className="space-y-1 text-green-800">
                 <p><span className="font-medium">Donor:</span> {donorDisplay}</p>
+                <p><span className="font-medium">Program:</span> {program}</p>
                 <p><span className="font-medium">Item:</span> {description}</p>
                 <p><span className="font-medium">Category:</span> {category}</p>
                 <p><span className="font-medium">Location:</span> {storageLocation}</p>

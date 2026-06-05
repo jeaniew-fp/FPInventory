@@ -20,4 +20,5 @@ export const STORAGE_LOCATIONS = [
 ];
 
 export const PROGRAMS = ['Shelter', 'Prevention', 'Beaverton Buddies', 'Stabilization'];
+export const CHECK_IN_PROGRAMS = ['General', 'Shelter', 'Prevention', 'Beaverton Buddies', 'Stabilization'];
 export const CONDITIONS = ['New', 'Used - Good', 'Used - Fair'];

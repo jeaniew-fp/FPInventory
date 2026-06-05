@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache';
 export async function submitCheckIn(formData: {
   donorId: string;
   donorBloomerangId?: string;
+  program: string;
   category: string;
   description: string;
   storageLocation: string;
@@ -34,6 +35,7 @@ export async function submitCheckIn(formData: {
       .from('inventory_items')
       .update({
         current_quantity: existing.current_quantity + formData.quantity,
+        program: formData.program,
         updated_at: new Date().toISOString(),
       })
       .eq('id', itemId);
@@ -44,6 +46,7 @@ export async function submitCheckIn(formData: {
         category: formData.category,
         description: formData.description,
         storage_location: formData.storageLocation,
+        program: formData.program,
         current_quantity: formData.quantity,
         qr_code: '',
       })

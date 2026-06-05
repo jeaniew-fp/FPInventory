@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
-import { ITEM_CATEGORIES, STORAGE_LOCATIONS } from '@/lib/constants';
+import { ITEM_CATEGORIES, STORAGE_LOCATIONS, CHECK_IN_PROGRAMS } from '@/lib/constants';
 import { format } from 'date-fns';
 
 type Item = {
@@ -9,6 +9,7 @@ type Item = {
   description: string;
   category: string;
   storage_location: string;
+  program: string;
   current_quantity: number;
   updated_at: string;
 };
@@ -17,13 +18,17 @@ export default function InventoryTable({ items }: { items: Item[] }) {
   const [search, setSearch] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
   const [filterLocation, setFilterLocation] = useState('');
+  const [filterProgram, setFilterProgram] = useState('');
 
   const filtered = items.filter(item => {
     const matchSearch = !search || item.description.toLowerCase().includes(search.toLowerCase());
     const matchCat = !filterCategory || item.category === filterCategory;
     const matchLoc = !filterLocation || item.storage_location === filterLocation;
-    return matchSearch && matchCat && matchLoc;
+    const matchProg = !filterProgram || item.program === filterProgram;
+    return matchSearch && matchCat && matchLoc && matchProg;
   });
+
+  const hasFilters = search || filterCategory || filterLocation || filterProgram;
 
   return (
     <div className="space-y-4">
@@ -54,12 +59,20 @@ export default function InventoryTable({ items }: { items: Item[] }) {
             {STORAGE_LOCATIONS.map(l => <option key={l} value={l}>{l}</option>)}
           </select>
         </div>
-        {(search || filterCategory || filterLocation) && (
+        <select
+          value={filterProgram}
+          onChange={e => setFilterProgram(e.target.value)}
+          className="w-full px-3 py-2.5 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-600 text-sm bg-white"
+        >
+          <option value="">All Programs</option>
+          {CHECK_IN_PROGRAMS.map(p => <option key={p} value={p}>{p}</option>)}
+        </select>
+        {hasFilters && (
           <button
-            onClick={() => { setSearch(''); setFilterCategory(''); setFilterLocation(''); }}
+            onClick={() => { setSearch(''); setFilterCategory(''); setFilterLocation(''); setFilterProgram(''); }}
             className="text-xs text-gray-500 hover:text-red-500 underline"
           >
-            Clear filters ({filtered.length} results)
+            Clear filters ({filtered.length} result{filtered.length !== 1 ? 's' : ''})
           </button>
         )}
       </div>
@@ -80,6 +93,11 @@ export default function InventoryTable({ items }: { items: Item[] }) {
                     <p className="font-semibold text-gray-900 text-sm leading-tight">{item.description}</p>
                     <p className="text-xs text-gray-500 mt-0.5">{item.category}</p>
                     <p className="text-xs text-gray-400 mt-0.5">{item.storage_location}</p>
+                    {item.program && (
+                      <span className="inline-block mt-1 text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-medium">
+                        {item.program}
+                      </span>
+                    )}
                   </div>
                   <div className="text-right shrink-0">
                     <span className={`inline-block px-2.5 py-1 rounded-full text-sm font-bold ${
@@ -116,6 +134,7 @@ export default function InventoryTable({ items }: { items: Item[] }) {
                 <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Description</th>
                 <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Category</th>
                 <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Location</th>
+                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Program</th>
                 <th className="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Qty</th>
                 <th className="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Updated</th>
               </tr>
@@ -130,6 +149,11 @@ export default function InventoryTable({ items }: { items: Item[] }) {
                   <td className="px-5 py-3.5 font-medium text-gray-900 text-sm">{item.description}</td>
                   <td className="px-5 py-3.5 text-sm text-gray-600">{item.category}</td>
                   <td className="px-5 py-3.5 text-sm text-gray-600">{item.storage_location}</td>
+                  <td className="px-5 py-3.5 text-sm">
+                    <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
+                      {item.program ?? 'General'}
+                    </span>
+                  </td>
                   <td className="px-5 py-3.5 text-right">
                     <span className={`inline-block px-2.5 py-0.5 rounded-full text-sm font-bold ${
                       item.current_quantity === 0
