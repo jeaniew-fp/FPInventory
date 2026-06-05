@@ -64,6 +64,14 @@ export default function Nav({ role }: { role: string }) {
               </Link>
             </>
           )}
+          <Link
+            href="/account"
+            className={`text-sm font-medium transition-colors ${
+              pathname === '/account' ? 'text-yellow-300' : 'text-purple-100 hover:text-white'
+            }`}
+          >
+            My Account
+          </Link>
           <button
             onClick={handleLogout}
             className="text-sm font-medium text-purple-200 hover:text-white transition-colors ml-4 border border-purple-400 px-3 py-1 rounded-lg"
@@ -79,12 +87,20 @@ export default function Nav({ role }: { role: string }) {
           <Image src="/fpgwc-logo.png" alt="FPGWC Logo" width={32} height={32} className="rounded-full" />
           <span className="font-semibold text-base">FPGWC Inventory</span>
         </div>
-        <button
-          onClick={handleLogout}
-          className="text-xs text-purple-200 hover:text-white border border-purple-400 px-2 py-1 rounded-md"
-        >
-          Sign Out
-        </button>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/account"
+            className="text-xs text-purple-200 hover:text-white"
+          >
+            Account
+          </Link>
+          <button
+            onClick={handleLogout}
+            className="text-xs text-purple-200 hover:text-white border border-purple-400 px-2 py-1 rounded-md"
+          >
+            Sign Out
+          </button>
+        </div>
       </div>
 
       {/* Mobile bottom nav */}
