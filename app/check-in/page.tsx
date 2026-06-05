@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { ITEM_CATEGORIES, STORAGE_LOCATIONS, CONDITIONS, CHECK_IN_PROGRAMS, GIFT_CARD_PURPOSES } from '@/lib/constants';
+import { ITEM_CATEGORIES, STORAGE_LOCATIONS, GIFT_CARD_STORAGE_LOCATIONS, CONDITIONS, CHECK_IN_PROGRAMS, GIFT_CARD_PURPOSES } from '@/lib/constants';
 import { estimateFMV } from '@/lib/fmv';
 import { submitCheckIn } from '@/app/actions/checkIn';
 import FMVGuidePanel from '@/components/FMVGuidePanel';
@@ -652,7 +652,7 @@ export default function CheckInPage() {
                     className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-600 text-base bg-white"
                   >
                     <option value="">Select location…</option>
-                    {STORAGE_LOCATIONS.map(l => <option key={l} value={l}>{l}</option>)}
+                    {GIFT_CARD_STORAGE_LOCATIONS.map(l => <option key={l} value={l}>{l}</option>)}
                   </select>
                 </div>
               )}

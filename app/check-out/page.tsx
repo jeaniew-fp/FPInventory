@@ -2,7 +2,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { PROGRAMS, GIFT_CARD_PURPOSES, SHELTER_LOCATIONS_GC } from '@/lib/constants';
+import { PROGRAMS, GIFT_CARD_PURPOSES, GIFT_CARD_STORAGE_LOCATIONS } from '@/lib/constants';
 import { submitCheckOut } from '@/app/actions/checkOut';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
@@ -617,7 +617,7 @@ function CheckOutForm() {
                   className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-400 text-base bg-white"
                 >
                   <option value="">Select location…</option>
-                  {SHELTER_LOCATIONS_GC.map(l => <option key={l} value={l}>{l}</option>)}
+                  {GIFT_CARD_STORAGE_LOCATIONS.map(l => <option key={l} value={l}>{l}</option>)}
                 </select>
               </div>
 

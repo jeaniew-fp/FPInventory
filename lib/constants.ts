@@ -19,6 +19,11 @@ export const STORAGE_LOCATIONS = [
   'Storage Unit',
 ];
 
+export const GIFT_CARD_STORAGE_LOCATIONS = [
+  'Beaverton Shelter Locked Drawer',
+  'Hillsboro Shelter Locked Drawer',
+];
+
 export const PROGRAMS = ['Shelter', 'Prevention', 'Beaverton Buddies', 'Stabilization'];
 export const CHECK_IN_PROGRAMS = ['General', 'Shelter', 'Prevention', 'Beaverton Buddies', 'Stabilization'];
 export const GIFT_CARD_PURPOSES = [
