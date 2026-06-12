@@ -8,7 +8,7 @@ export default function QRDisplay({ itemId, description }: { itemId: string; des
 
   useEffect(() => {
     // Build the full checkout URL so phone cameras open directly to the checkout page
-    const url = `${window.location.origin}/check-out?item=${itemId}`;
+    const url = `${window.location.origin}/item/${itemId}`;
     setCheckoutUrl(url);
     QRCode.toDataURL(url, { width: 220, margin: 2 }).then(setQrUrl).catch(() => {});
   }, [itemId]);

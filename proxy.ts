@@ -3,7 +3,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 
 export async function proxy(request: NextRequest) {
   // Public paths — skip session refresh entirely
-  const publicPaths = ['/check-in', '/check-out'];
+  const publicPaths = ['/check-in', '/check-out', '/item'];
   const isPublic = publicPaths.some(p =>
     request.nextUrl.pathname.startsWith(p)
   );

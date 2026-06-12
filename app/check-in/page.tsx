@@ -1,5 +1,6 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { ITEM_CATEGORIES, STORAGE_LOCATIONS, GIFT_CARD_STORAGE_LOCATIONS, CONDITIONS, CHECK_IN_PROGRAMS, GIFT_CARD_PURPOSES } from '@/lib/constants';
 import { estimateFMV } from '@/lib/fmv';
@@ -20,8 +21,9 @@ type Donor = {
 
 type Step = 1 | 2 | 3;
 
-export default function CheckInPage() {
+function CheckInForm() {
   const supabase = createClient();
+  const searchParams = useSearchParams();
   const [step, setStep] = useState<Step>(1);
   const [loading, setLoading] = useState(false);
 
@@ -68,6 +70,24 @@ export default function CheckInPage() {
   const [successDescription, setSuccessDescription] = useState('');
 
   // Donor search
+  // Pre-load item if coming from QR code scan (?item=UUID)
+  useEffect(() => {
+    const itemId = searchParams.get('item');
+    if (!itemId) return;
+    supabase.from('inventory_items').select('*').eq('id', itemId).single().then(({ data }) => {
+      if (!data) return;
+      setDescription(data.description);
+      setCategory(data.category);
+      setStorageLocation(data.storage_location);
+      setExistingItemId(data.id);
+      if (data.item_type === 'gift_card') {
+        setItemType('gift_card');
+        setRetailer(data.retailer ?? '');
+        setFaceValue(data.face_value ?? 0);
+      }
+    });
+  }, []);
+
   useEffect(() => {
     if (donorSearch.length < 2) { setDonorResults([]); return; }
     const timer = setTimeout(async () => {
@@ -766,5 +786,13 @@ export default function CheckInPage() {
         activeCategory={category}
       />
     </div>
+  );
+}
+
+export default function CheckInPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center"><p className="text-gray-400">Loading…</p></div>}>
+      <CheckInForm />
+    </Suspense>
   );
 }
