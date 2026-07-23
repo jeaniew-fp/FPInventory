@@ -1,10 +1,10 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter } from 'next/font/google';
+import { Figtree } from 'next/font/google';
 import './globals.css';
 import { Toaster } from 'react-hot-toast';
 import PWARegister from '@/components/PWARegister';
 
-const inter = Inter({ subsets: ['latin'] });
+const figtree = Figtree({ subsets: ['latin'], weight: ['400', '500', '600', '700', '800'] });
 
 export const metadata: Metadata = {
   title: 'FPGWC Inventory',
@@ -35,7 +35,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="apple-mobile-web-app-title" content="FP Inventory" />
         <link rel="apple-touch-icon" href="/fpgwc-logo.png" />
       </head>
-      <body className={`${inter.className} bg-gray-50 min-h-screen`}>
+      <body className={`${figtree.className} min-h-screen`} style={{ backgroundColor: '#f8f7fb' }}>
         {children}
         <Toaster position="top-center" toastOptions={{ duration: 4000 }} />
         <PWARegister />

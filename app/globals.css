@@ -1,6 +1,25 @@
+@import url('https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+  --fp-dark: #3a1f4a;
+  --fp-purple: #8b4a72;
+  --fp-purple-light: #f3e6f5;
+  --fp-muted: #8a7f92;
+  --fp-bg: #f8f7fb;
+  --fp-card-shadow: 0 10px 30px -18px rgba(58,31,74,.3);
+  --fp-card-border: 1px solid rgba(58,31,74,.05);
+  --fp-input-border: 1.5px solid #e3ddec;
+  --fp-input-bg: #fbfafd;
+  --fp-row-bg: #f7f4fb;
+  --fp-grad-primary: linear-gradient(120deg,#f5a623,#d1618a 55%,#7c3a9e);
+  --fp-grad-blue: linear-gradient(130deg,#1b6cb0,#3f9be0);
+  --fp-grad-orange: linear-gradient(130deg,#e87d4a,#f5a623);
+  --fp-grad-nav: linear-gradient(100deg,#f5a623 0%,#d1618a 50%,#7c3a9e 100%);
+}
 
 @layer utilities {
   .print-only {
