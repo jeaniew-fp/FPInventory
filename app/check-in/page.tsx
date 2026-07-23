@@ -53,7 +53,7 @@ function CheckInForm() {
   const [existingItemId, setExistingItemId] = useState<string | null>(null);
   const [storageLocation, setStorageLocation] = useState('');
   const [condition, setCondition] = useState('');
-  const [quantity, setQuantity] = useState(1);
+  const [quantity, setQuantity] = useState<number | ''>('');
   const [fmvPerUnit, setFmvPerUnit] = useState(0);
   const [notes, setNotes] = useState('');
   const [photoFile, setPhotoFile] = useState<File | null>(null);
@@ -216,7 +216,7 @@ function CheckInForm() {
     setNewDonorName(''); setNewDonorOrg(''); setNewDonorEmail(''); setNewDonorPhone('');
     setItemType('standard'); setRetailer(''); setFaceValue(0); setGcPurpose('');
     setProgram('General'); setCategory(''); setDescription(''); setStorageLocation(''); setCondition('');
-    setQuantity(1); setFmvPerUnit(0); setNotes('');
+    setQuantity(''); setFmvPerUnit(0); setNotes('');
     setPhotoFile(null); setPhotoPreview(null);
     setDateReceived(format(new Date(), 'yyyy-MM-dd'));
     setSuccessItemId(null); setQrDataUrl(null);
@@ -488,7 +488,7 @@ function CheckInForm() {
                         type="number"
                         min="1"
                         value={quantity}
-                        onChange={e => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                        onChange={e => setQuantity(e.target.value === '' ? '' : Math.max(1, parseInt(e.target.value) || 1))}
                         className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-600 text-base"
                       />
                     </div>
@@ -626,7 +626,7 @@ function CheckInForm() {
                     type="number"
                     min="1"
                     value={quantity}
-                    onChange={e => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                    onChange={e => setQuantity(e.target.value === '' ? '' : Math.max(1, parseInt(e.target.value) || 1))}
                     className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-600 text-base"
                   />
                 </div>

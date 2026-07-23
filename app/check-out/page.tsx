@@ -42,11 +42,11 @@ function CheckOutForm() {
   const [hmisNumber, setHmisNumber] = useState('');
   const [caseManagerId, setCaseManagerId] = useState('');
   const [program, setProgram] = useState('');
-  const [quantity, setQuantity] = useState(1);
+  const [quantity, setQuantity] = useState<number | ''>('');
   const [dateGiven, setDateGiven] = useState(format(new Date(), 'yyyy-MM-dd'));
 
   // Gift card specific fields
-  const [familySize, setFamilySize] = useState<number>(1);
+  const [familySize, setFamilySize] = useState<number | ''>('');
   const [shelterLocation, setShelterLocation] = useState('');
   const [giftCardPurpose, setGiftCardPurpose] = useState('');
 
@@ -88,7 +88,7 @@ function CheckOutForm() {
       .single();
     if (data) {
       setSelectedItem(data);
-      setQuantity(1);
+      setQuantity('');
       setItemSearch('');
       setItemResults([]);
     } else {
@@ -178,7 +178,7 @@ function CheckOutForm() {
     setProgram('');
     setQuantity(1);
     setDateGiven(format(new Date(), 'yyyy-MM-dd'));
-    setFamilySize(1);
+    setFamilySize('');
     setShelterLocation('');
     setGiftCardPurpose('');
     setSuccess(false);
@@ -444,7 +444,7 @@ function CheckOutForm() {
                       type="button"
                       onClick={() => {
                         setSelectedItem(item);
-                        setQuantity(1);
+                        setQuantity('');
                         setItemSearch('');
                         setItemResults([]);
                       }}
@@ -581,7 +581,7 @@ function CheckOutForm() {
                     min="1"
                     max={selectedItem?.current_quantity ?? 999}
                     value={quantity}
-                    onChange={e => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                    onChange={e => setQuantity(e.target.value === '' ? '' : Math.max(1, parseInt(e.target.value) || 1))}
                     className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-400 text-base"
                   />
                   {selectedItem && quantity > selectedItem.current_quantity && (
@@ -595,7 +595,7 @@ function CheckOutForm() {
                     required
                     min="1"
                     value={familySize}
-                    onChange={e => setFamilySize(Math.max(1, parseInt(e.target.value) || 1))}
+                    onChange={e => setFamilySize(e.target.value === '' ? '' : Math.max(1, parseInt(e.target.value) || 1))}
                     className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-400 text-base"
                   />
                 </div>
@@ -647,7 +647,7 @@ function CheckOutForm() {
                   min="1"
                   max={selectedItem?.current_quantity ?? 999}
                   value={quantity}
-                  onChange={e => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                  onChange={e => setQuantity(e.target.value === '' ? '' : Math.max(1, parseInt(e.target.value) || 1))}
                   className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-400 text-base"
                 />
                 {selectedItem && quantity > selectedItem.current_quantity && (
