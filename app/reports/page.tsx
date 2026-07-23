@@ -36,8 +36,8 @@ export default async function ReportsPage() {
     <Layout role="admin">
       <div className="space-y-5">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Reports</h1>
-          <p className="text-gray-500 text-sm mt-1">Analytics and exports for FPGWC in-kind inventory</p>
+          <h1 className="text-2xl font-extrabold" style={{ color: '#3a1f4a' }}>Reports</h1>
+          <p className="text-sm mt-1" style={{ color: '#8a7f92' }}>Analytics and exports for FPGWC in-kind inventory</p>
         </div>
         <ReportsTabs
           items={items ?? []}

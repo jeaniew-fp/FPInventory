@@ -142,17 +142,22 @@ export default function ReportsTabs({
     ]);
   }
 
+  const inputStyle = { border: '1.5px solid #e3ddec', background: '#fbfafd', color: '#3a1f4a' };
+  const cardStyle = { boxShadow: '0 10px 30px -18px rgba(58,31,74,.3)', border: '1px solid rgba(58,31,74,.05)' };
+  const exportBtnStyle = { border: '1.5px solid #d6cee0', color: '#8b4a72', background: '#fff' };
+
   return (
     <div>
       {/* Tab bar */}
-      <div className="flex gap-1 bg-gray-100 rounded-xl p-1 mb-5">
+      <div className="flex gap-1.5 rounded-2xl p-1.5 mb-5" style={{ background: '#efe9f4' }}>
         {tabs.map(t => (
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
-              tab === t.key ? 'bg-white text-green-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-            }`}
+            className="flex-1 py-2.5 px-3 rounded-xl text-sm font-semibold transition-colors"
+            style={tab === t.key
+              ? { background: '#fff', color: '#8b4a72', boxShadow: '0 4px 12px -6px rgba(58,31,74,.3)' }
+              : { color: '#7a7085' }}
           >
             {t.label}
           </button>
@@ -163,35 +168,33 @@ export default function ReportsTabs({
       {tab === 'inventory' && (
         <div className="space-y-4">
           <div className="flex justify-end">
-            <button
-              onClick={exportInventoryCSV}
-              className="text-sm border border-gray-300 text-gray-700 px-4 py-2 rounded-xl hover:bg-gray-50 transition-colors font-medium"
-            >
-              ⬇ Export CSV
+            <button onClick={exportInventoryCSV} className="text-sm px-4 py-2 rounded-xl font-bold transition-colors hover:opacity-80" style={exportBtnStyle}>
+              ↓ Export CSV
             </button>
           </div>
           {Object.entries(byLocation).map(([loc, locItems]) => (
-            <div key={loc} className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-              <div className="px-5 py-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
-                <h3 className="font-semibold text-gray-800">{loc}</h3>
-                <span className="text-sm text-green-700 font-medium">
+            <div key={loc} className="bg-white rounded-2xl overflow-hidden" style={cardStyle}>
+              <div className="px-6 py-4 flex items-center justify-between" style={{ background: 'linear-gradient(100deg,#f6f0d9,#f3e6f5)' }}>
+                <h3 className="font-extrabold" style={{ color: '#3a1f4a' }}>{loc}</h3>
+                <span className="font-extrabold text-sm" style={{ color: '#237347' }}>
                   {locItems.reduce((s, i) => s + i.current_quantity, 0)} total items
                 </span>
               </div>
-              <div className="divide-y divide-gray-100">
+              <div className="divide-y" style={{ borderColor: '#f2ede6' }}>
                 {locItems.map(item => (
-                  <div key={item.id} className="px-5 py-3 flex justify-between items-center text-sm">
+                  <div key={item.id} className="px-6 py-3.5 flex justify-between items-center text-sm">
                     <div>
-                      <span className="font-medium text-gray-900">{item.description}</span>
-                      <span className="text-gray-400 ml-2">({item.category})</span>
+                      <span className="font-semibold" style={{ color: '#2a2333' }}>{item.description}</span>
+                      <span className="ml-2" style={{ color: '#9a8fa0' }}>({item.category})</span>
                     </div>
-                    <span className={`font-bold px-2 py-0.5 rounded-full ${
-                      item.current_quantity === 0
-                        ? 'bg-red-100 text-red-600'
+                    <span
+                      className="font-extrabold text-sm flex items-center justify-center rounded-full"
+                      style={item.current_quantity === 0
+                        ? { background: '#fde8e8', color: '#c0392b', width: 28, height: 28 }
                         : item.current_quantity < 3
-                        ? 'bg-yellow-100 text-yellow-700'
-                        : 'bg-green-100 text-green-700'
-                    }`}>
+                        ? { background: '#fff0d6', color: '#b5720a', width: 28, height: 28 }
+                        : { background: '#fff0d6', color: '#b5720a', width: 28, height: 28 }}
+                    >
                       {item.current_quantity}
                     </span>
                   </div>
@@ -206,45 +209,39 @@ export default function ReportsTabs({
       {tab === 'quarterly' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <p className="text-sm text-gray-500">Total FMV of all donations received, by quarter</p>
-            <button
-              onClick={exportQuarterlyCSV}
-              className="text-sm border border-gray-300 text-gray-700 px-4 py-2 rounded-xl hover:bg-gray-50 transition-colors font-medium"
-            >
-              ⬇ Export CSV
+            <p className="text-sm" style={{ color: '#8a7f92' }}>Total FMV of all donations received, by quarter</p>
+            <button onClick={exportQuarterlyCSV} className="text-sm px-4 py-2 rounded-xl font-bold hover:opacity-80" style={exportBtnStyle}>
+              ↓ Export CSV
             </button>
           </div>
           <div className="flex justify-end">
-            <button
-              onClick={exportCheckInsCSV}
-              className="text-sm border border-green-300 text-green-700 px-4 py-2 rounded-xl hover:bg-green-50 transition-colors font-medium"
-            >
-              ⬇ Export All Check-Ins CSV
+            <button onClick={exportCheckInsCSV} className="text-sm px-4 py-2 rounded-xl font-bold hover:opacity-80" style={exportBtnStyle}>
+              ↓ Export All Check-Ins CSV
             </button>
           </div>
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="bg-white rounded-2xl overflow-hidden" style={cardStyle}>
             {quarterlyRows.length === 0 ? (
-              <p className="text-gray-400 text-sm px-5 py-8 text-center">No donations recorded yet.</p>
+              <p className="text-sm px-5 py-8 text-center" style={{ color: '#a79fb0' }}>No donations recorded yet.</p>
             ) : (
               <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
-                  <tr>
-                    <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Quarter</th>
-                    <th className="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Total FMV</th>
+                <thead>
+                  <tr style={{ background: '#f3eef8' }}>
+                    <th className="text-left px-5 py-3 text-xs font-extrabold uppercase tracking-wider" style={{ color: '#8b4a72' }}>Quarter</th>
+                    <th className="text-right px-5 py-3 text-xs font-extrabold uppercase tracking-wider" style={{ color: '#8b4a72' }}>Total FMV</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody>
                   {quarterlyRows.map(([q, v]) => (
-                    <tr key={q}>
-                      <td className="px-5 py-3.5 font-medium text-gray-900">{q}</td>
-                      <td className="px-5 py-3.5 text-right font-semibold text-green-700">
+                    <tr key={q} style={{ borderTop: '1px solid #f2ede6' }}>
+                      <td className="px-5 py-3.5 font-semibold" style={{ color: '#2a2333' }}>{q}</td>
+                      <td className="px-5 py-3.5 text-right font-bold" style={{ color: '#237347' }}>
                         ${v.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                       </td>
                     </tr>
                   ))}
-                  <tr className="bg-gray-50 font-bold">
-                    <td className="px-5 py-3 text-gray-900">All Time Total</td>
-                    <td className="px-5 py-3 text-right text-green-800">
+                  <tr style={{ background: '#f7f4fb', borderTop: '1px solid #f2ede6' }}>
+                    <td className="px-5 py-3 font-extrabold" style={{ color: '#3a1f4a' }}>All Time Total</td>
+                    <td className="px-5 py-3 text-right font-extrabold" style={{ color: '#237347' }}>
                       ${quarterlyRows.reduce((s, [, v]) => s + v, 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                     </td>
                   </tr>
@@ -263,31 +260,30 @@ export default function ReportsTabs({
             placeholder="Search by client name or HMIS number…"
             value={clientSearch}
             onChange={e => setClientSearch(e.target.value)}
-            className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-600 text-base"
+            className="w-full px-4 py-3 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-purple-300"
+            style={inputStyle}
           />
           {clientSearch.trim().length >= 2 && (
-            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="bg-white rounded-2xl overflow-hidden" style={cardStyle}>
               {clientResults.length === 0 ? (
-                <p className="text-gray-400 text-sm px-5 py-6 text-center">No check-outs found for this client.</p>
+                <p className="text-sm px-5 py-6 text-center" style={{ color: '#a79fb0' }}>No check-outs found for this client.</p>
               ) : (
                 <>
-                  <div className="px-5 py-3 bg-gray-50 border-b border-gray-200 text-sm text-gray-500">
+                  <div className="px-5 py-3 text-sm" style={{ background: '#f3eef8', color: '#8b4a72', borderBottom: '1px solid #f2ede6' }}>
                     {clientResults.length} record{clientResults.length !== 1 ? 's' : ''} found
                   </div>
-                  <div className="divide-y divide-gray-100">
+                  <div>
                     {clientResults.map(co => (
-                      <div key={co.id} className="px-5 py-3.5 text-sm">
+                      <div key={co.id} className="px-5 py-3.5 text-sm" style={{ borderTop: '1px solid #f2ede6' }}>
                         <div className="flex flex-wrap gap-x-4 gap-y-1 items-start justify-between">
                           <div>
-                            <span className="font-medium text-gray-900">{co.client_first_name} {co.client_last_name}</span>
-                            {co.hmis_number && (
-                              <span className="ml-2 text-xs text-gray-400">HMIS: {co.hmis_number}</span>
-                            )}
-                            <p className="text-gray-600 mt-0.5">
+                            <span className="font-semibold" style={{ color: '#2a2333' }}>{co.client_first_name} {co.client_last_name}</span>
+                            {co.hmis_number && <span className="ml-2 text-xs" style={{ color: '#9a8fa0' }}>HMIS: {co.hmis_number}</span>}
+                            <p className="mt-0.5" style={{ color: '#5d5468' }}>
                               {co.inventory_items?.description} · {co.program} · Qty: {co.quantity}
                             </p>
                           </div>
-                          <span className="text-gray-400 text-xs">{format(new Date(co.date_given), 'MMM d, yyyy')}</span>
+                          <span className="text-xs" style={{ color: '#9a8fa0' }}>{format(new Date(co.date_given), 'MMM d, yyyy')}</span>
                         </div>
                       </div>
                     ))}
@@ -307,36 +303,35 @@ export default function ReportsTabs({
             placeholder="Search by donor name or organization…"
             value={donorSearch}
             onChange={e => setDonorSearch(e.target.value)}
-            className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-600 text-base"
+            className="w-full px-4 py-3 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-purple-300"
+            style={inputStyle}
           />
           {donorSearch.trim().length >= 2 && (
-            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="bg-white rounded-2xl overflow-hidden" style={cardStyle}>
               {donorResults.length === 0 ? (
-                <p className="text-gray-400 text-sm px-5 py-6 text-center">No donations found for this donor.</p>
+                <p className="text-sm px-5 py-6 text-center" style={{ color: '#a79fb0' }}>No donations found for this donor.</p>
               ) : (
                 <>
-                  <div className="px-5 py-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between text-sm text-gray-500">
-                    <span>{donorResults.length} donation record{donorResults.length !== 1 ? 's' : ''}</span>
-                    <span className="font-medium text-green-700">
+                  <div className="px-5 py-3 flex items-center justify-between text-sm" style={{ background: '#f3eef8', borderBottom: '1px solid #f2ede6' }}>
+                    <span style={{ color: '#8b4a72' }}>{donorResults.length} donation record{donorResults.length !== 1 ? 's' : ''}</span>
+                    <span className="font-bold" style={{ color: '#237347' }}>
                       Total FMV: ${donorResults.reduce((s, c) => s + (c.total_fmv ?? 0), 0).toFixed(2)}
                     </span>
                   </div>
-                  <div className="divide-y divide-gray-100">
+                  <div>
                     {donorResults.map(ci => (
-                      <div key={ci.id} className="px-5 py-3.5 text-sm">
+                      <div key={ci.id} className="px-5 py-3.5 text-sm" style={{ borderTop: '1px solid #f2ede6' }}>
                         <div className="flex flex-wrap gap-x-4 gap-y-1 items-start justify-between">
                           <div>
-                            <span className="font-medium text-gray-900">{ci.donors?.name}</span>
-                            {ci.donors?.organization && (
-                              <span className="ml-2 text-xs text-gray-400">{ci.donors.organization}</span>
-                            )}
-                            <p className="text-gray-600 mt-0.5">
+                            <span className="font-semibold" style={{ color: '#2a2333' }}>{ci.donors?.name}</span>
+                            {ci.donors?.organization && <span className="ml-2 text-xs" style={{ color: '#9a8fa0' }}>{ci.donors.organization}</span>}
+                            <p className="mt-0.5" style={{ color: '#5d5468' }}>
                               {ci.inventory_items?.description} · {ci.condition} · Qty: {ci.quantity}
                             </p>
                           </div>
                           <div className="text-right">
-                            <span className="text-green-700 font-semibold">${ci.total_fmv?.toFixed(2)}</span>
-                            <p className="text-gray-400 text-xs mt-0.5">{format(new Date(ci.date_received), 'MMM d, yyyy')}</p>
+                            <span className="font-bold" style={{ color: '#237347' }}>${ci.total_fmv?.toFixed(2)}</span>
+                            <p className="text-xs mt-0.5" style={{ color: '#9a8fa0' }}>{format(new Date(ci.date_received), 'MMM d, yyyy')}</p>
                           </div>
                         </div>
                       </div>

@@ -387,7 +387,7 @@ function CheckOutForm() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-6 pb-28 md:pb-10 max-w-lg mx-auto">
+    <div className="min-h-screen px-4 py-6 pb-28 md:pb-10 max-w-lg mx-auto" style={{ background: '#f8f7fb' }}>
       {showScanner && (
         <QRScanner
           onScan={handleQRScan}
@@ -396,14 +396,14 @@ function CheckOutForm() {
       )}
 
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Check Out Item</h1>
-        <p className="text-gray-500 text-sm mt-1">Give an item to a client</p>
+        <h1 className="text-2xl font-extrabold" style={{ color: '#3a1f4a' }}>Check Out Item</h1>
+        <p className="text-sm mt-1" style={{ color: '#8a7f92' }}>Give an item to a client</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* Item selection */}
-        <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
-          <h2 className="font-semibold text-gray-900 mb-4">Select Item</h2>
+        <div className="bg-white rounded-2xl p-6" style={{ boxShadow: '0 10px 30px -18px rgba(58,31,74,.3)', border: '1px solid rgba(58,31,74,.05)' }}>
+          <h2 className="font-extrabold text-lg mb-4" style={{ color: '#3a1f4a' }}>Select Item</h2>
 
           {!selectedItem ? (
             <>
@@ -411,20 +411,20 @@ function CheckOutForm() {
               <button
                 type="button"
                 onClick={() => setShowScanner(true)}
-                className="w-full text-white py-3.5 rounded-xl font-semibold text-base mb-4 flex items-center justify-center gap-2 transition-opacity hover:opacity-90"
-                style={{ backgroundColor: '#0063be' }}
+                className="w-full text-white py-3.5 rounded-xl font-extrabold text-base mb-4 flex items-center justify-center gap-2 transition-opacity hover:opacity-90"
+                style={{ background: 'linear-gradient(130deg,#1b6cb0,#3f9be0)', boxShadow: '0 12px 26px -14px rgba(27,108,176,.8)' }}
               >
                 📷 Scan QR Code
               </button>
 
               <div className="flex items-center gap-3 mb-4">
-                <div className="flex-1 h-px bg-gray-200" />
-                <span className="text-xs text-gray-400 font-medium">or search manually</span>
-                <div className="flex-1 h-px bg-gray-200" />
+                <div className="flex-1 h-px" style={{ background: '#eae4f0' }} />
+                <span className="text-xs font-semibold" style={{ color: '#a79fb0' }}>or search manually</span>
+                <div className="flex-1 h-px" style={{ background: '#eae4f0' }} />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-semibold mb-1.5" style={{ color: '#4d4457' }}>
                   Search by item name or category
                 </label>
                 <input
@@ -432,12 +432,12 @@ function CheckOutForm() {
                   value={itemSearch}
                   onChange={e => setItemSearch(e.target.value)}
                   placeholder="e.g., blanket, dishes, hygiene, gift card…"
-                  className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 text-base"
-                  style={{ '--tw-ring-color': '#f6a03b' } as React.CSSProperties}
+                  className="w-full px-4 py-3 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-purple-300"
+                  style={{ border: '1.5px solid #e3ddec', background: '#fbfafd', color: '#3a1f4a' }}
                 />
               </div>
               {itemResults.length > 0 && (
-                <div className="mt-2 border border-gray-200 rounded-xl overflow-hidden">
+                <div className="mt-2 rounded-xl overflow-hidden" style={{ border: '1.5px solid #e3ddec' }}>
                   {itemResults.map(item => (
                     <button
                       key={item.id}
@@ -448,7 +448,10 @@ function CheckOutForm() {
                         setItemSearch('');
                         setItemResults([]);
                       }}
-                      className="w-full text-left px-4 py-3 hover:bg-orange-50 border-b border-gray-100 last:border-0 transition-colors"
+                      className="w-full text-left px-4 py-3 border-b last:border-0 transition-colors"
+                      style={{ borderColor: '#f2ede6' }}
+                      onMouseEnter={e => (e.currentTarget.style.background = '#f7f4fb')}
+                      onMouseLeave={e => (e.currentTarget.style.background = '')}
                     >
                       <div className="flex justify-between items-start">
                         <div>
@@ -501,50 +504,54 @@ function CheckOutForm() {
         </div>
 
         {/* Client info */}
-        <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm space-y-4">
-          <h2 className="font-semibold text-gray-900">Client Information</h2>
+        <div className="bg-white rounded-2xl p-6 space-y-4" style={{ boxShadow: '0 10px 30px -18px rgba(58,31,74,.3)', border: '1px solid rgba(58,31,74,.05)' }}>
+          <h2 className="font-extrabold text-lg" style={{ color: '#3a1f4a' }}>Client Information</h2>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">First Name <span className="text-red-500">*</span></label>
+              <label className="block text-sm font-semibold mb-1.5" style={{ color: '#4d4457' }}>First Name <span className="text-red-500">*</span></label>
               <input
                 type="text"
                 required
                 value={clientFirstName}
                 onChange={e => setClientFirstName(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-400 text-base"
+                className="w-full px-4 py-3 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-purple-300"
+                style={{ border: '1.5px solid #e3ddec', background: '#fbfafd', color: '#3a1f4a' }}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Last Name <span className="text-red-500">*</span></label>
+              <label className="block text-sm font-semibold mb-1.5" style={{ color: '#4d4457' }}>Last Name <span className="text-red-500">*</span></label>
               <input
                 type="text"
                 required
                 value={clientLastName}
                 onChange={e => setClientLastName(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-400 text-base"
+                className="w-full px-4 py-3 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-purple-300"
+                style={{ border: '1.5px solid #e3ddec', background: '#fbfafd', color: '#3a1f4a' }}
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">HMIS Number (optional)</label>
+            <label className="block text-sm font-semibold mb-1.5" style={{ color: '#4d4457' }}>HMIS Number (optional)</label>
             <input
               type="text"
               value={hmisNumber}
               onChange={e => setHmisNumber(e.target.value)}
               placeholder="e.g., 12345"
-              className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-400 text-base"
+              className="w-full px-4 py-3 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-purple-300"
+              style={{ border: '1.5px solid #e3ddec', background: '#fbfafd', color: '#3a1f4a' }}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Case Manager <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-semibold mb-1.5" style={{ color: '#4d4457' }}>Case Manager <span className="text-red-500">*</span></label>
             <select
               required
               value={caseManagerId}
               onChange={e => setCaseManagerId(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-400 text-base bg-white"
+              className="w-full px-4 py-3 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-purple-300"
+              style={{ border: '1.5px solid #e3ddec', background: '#fbfafd', color: '#4d4457' }}
             >
               <option value="">Select case manager…</option>
               {profiles.map(p => (
@@ -554,12 +561,13 @@ function CheckOutForm() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Program <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-semibold mb-1.5" style={{ color: '#4d4457' }}>Program <span className="text-red-500">*</span></label>
             <select
               required
               value={program}
               onChange={e => setProgram(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-400 text-base bg-white"
+              className="w-full px-4 py-3 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-purple-300"
+              style={{ border: '1.5px solid #e3ddec', background: '#fbfafd', color: '#4d4457' }}
             >
               <option value="">Select program…</option>
               {PROGRAMS.map(p => <option key={p} value={p}>{p}</option>)}
@@ -569,12 +577,12 @@ function CheckOutForm() {
           {/* Gift card specific fields */}
           {isGiftCard && (
             <>
-              <div className="h-px bg-purple-100" />
-              <p className="text-xs font-semibold text-purple-700 uppercase tracking-wide">Gift Card Details</p>
+              <div className="h-px" style={{ background: '#e6e0ee' }} />
+              <p className="text-xs font-extrabold uppercase tracking-wide" style={{ color: '#8b4a72' }}>Gift Card Details</p>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Number of Cards <span className="text-red-500">*</span></label>
+                  <label className="block text-sm font-semibold mb-1.5" style={{ color: '#4d4457' }}>Number of Cards <span className="text-red-500">*</span></label>
                   <input
                     type="number"
                     required
@@ -582,29 +590,31 @@ function CheckOutForm() {
                     max={selectedItem?.current_quantity ?? 999}
                     value={quantity}
                     onChange={e => setQuantity(e.target.value === '' ? '' : Math.max(1, parseInt(e.target.value) || 1))}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-400 text-base"
+                    className="w-full px-4 py-3 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-purple-300"
+                    style={{ border: '1.5px solid #e3ddec', background: '#fbfafd', color: '#3a1f4a' }}
                   />
                   {selectedItem && quantity > selectedItem.current_quantity && (
                     <p className="text-xs text-red-500 mt-1">Exceeds available quantity</p>
                   )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Family Size <span className="text-red-500">*</span></label>
+                  <label className="block text-sm font-semibold mb-1.5" style={{ color: '#4d4457' }}>Family Size <span className="text-red-500">*</span></label>
                   <input
                     type="number"
                     required
                     min="1"
                     value={familySize}
                     onChange={e => setFamilySize(e.target.value === '' ? '' : Math.max(1, parseInt(e.target.value) || 1))}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-400 text-base"
+                    className="w-full px-4 py-3 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-purple-300"
+                    style={{ border: '1.5px solid #e3ddec', background: '#fbfafd', color: '#3a1f4a' }}
                   />
                 </div>
               </div>
 
               {selectedItem?.face_value && quantity > 0 && (
-                <div className="bg-purple-50 border border-purple-200 rounded-xl p-3 text-sm text-purple-900 text-center">
-                  <span className="font-semibold">Total Value: ${(selectedItem.face_value * quantity).toFixed(2)}</span>
-                  <span className="text-purple-600 ml-2">({quantity} × ${selectedItem.face_value.toFixed(2)})</span>
+                <div className="rounded-xl p-3 text-sm text-center" style={{ background: '#f3e6f5', border: '1px solid #d6cee0' }}>
+                  <span className="font-extrabold" style={{ color: '#3a1f4a' }}>Total Value: ${(selectedItem.face_value * quantity).toFixed(2)}</span>
+                  <span className="ml-2" style={{ color: '#8b4a72' }}>({quantity} × ${selectedItem.face_value.toFixed(2)})</span>
                 </div>
               )}
 

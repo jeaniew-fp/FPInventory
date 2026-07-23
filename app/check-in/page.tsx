@@ -280,11 +280,11 @@ function CheckInForm() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-6 pb-28 md:pb-10 max-w-lg mx-auto">
+    <div className="min-h-screen px-4 py-6 pb-28 md:pb-10 max-w-lg mx-auto" style={{ background: '#f8f7fb' }}>
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Check In Donation</h1>
-        <p className="text-gray-500 text-sm mt-1">Record an in-kind donation or gift card</p>
+        <h1 className="text-2xl font-extrabold" style={{ color: '#3a1f4a' }}>Check In Donation</h1>
+        <p className="text-sm mt-1" style={{ color: '#8a7f92' }}>Record an in-kind donation or gift card</p>
       </div>
 
       {/* Step indicator */}
@@ -292,20 +292,19 @@ function CheckInForm() {
         {[1, 2].map(s => (
           <div key={s} className="flex items-center gap-2">
             <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-colors ${
-                step === s
-                  ? 'bg-green-700 text-white'
-                  : step > s
-                  ? 'bg-green-100 text-green-700'
-                  : 'bg-gray-200 text-gray-500'
-              }`}
+              className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-extrabold transition-colors"
+              style={step === s
+                ? { background: 'linear-gradient(135deg,#f5a623,#8b4a72)', color: '#fff' }
+                : step > s
+                ? { background: '#e6e0ee', color: '#8b4a72' }
+                : { background: '#e6e0ee', color: '#9a8fa0' }}
             >
               {step > s ? '✓' : s}
             </div>
-            <span className={`text-sm hidden md:inline ${step === s ? 'text-green-700 font-medium' : 'text-gray-400'}`}>
+            <span className="text-sm hidden md:inline font-semibold" style={{ color: step === s ? '#8b4a72' : '#9a8fa0' }}>
               {s === 1 ? 'Donor' : 'Item Details'}
             </span>
-            {s < 2 && <div className="w-8 h-0.5 bg-gray-200 mx-1" />}
+            {s < 2 && <div className="flex-1 mx-2" style={{ height: 3, borderRadius: 2, background: '#e6e0ee', minWidth: 32 }} />}
           </div>
         ))}
       </div>
@@ -313,38 +312,43 @@ function CheckInForm() {
       {/* Step 1 – Donor */}
       {step === 1 && (
         <div className="space-y-5">
-          <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
-            <h2 className="font-semibold text-gray-900 mb-4">Who is donating?</h2>
+          <div className="bg-white rounded-2xl p-6" style={{ boxShadow: '0 10px 30px -18px rgba(58,31,74,.3)', border: '1px solid rgba(58,31,74,.05)' }}>
+            <h2 className="font-extrabold text-lg mb-4" style={{ color: '#3a1f4a' }}>Who is donating?</h2>
 
             {!isNewDonor && !selectedDonor && (
               <>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Search donor by name</label>
+                  <label className="block text-sm font-semibold mb-1.5" style={{ color: '#4d4457' }}>Search donor by name</label>
                   <input
                     type="text"
                     value={donorSearch}
                     onChange={e => setDonorSearch(e.target.value)}
                     placeholder="Start typing a name…"
-                    className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-600 text-base"
+                    className="w-full px-4 py-3 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-purple-300"
+                    style={{ border: '1.5px solid #e3ddec', background: '#fbfafd', color: '#3a1f4a' }}
                   />
                 </div>
                 {donorResults.length > 0 && (
-                  <div className="mt-2 border border-gray-200 rounded-xl overflow-hidden">
+                  <div className="mt-2 rounded-xl overflow-hidden" style={{ border: '1.5px solid #e3ddec' }}>
                     {donorResults.map(d => (
                       <button
                         key={d.id}
                         onClick={() => { setSelectedDonor(d); setDonorSearch(''); setDonorResults([]); }}
-                        className="w-full text-left px-4 py-3 hover:bg-green-50 border-b border-gray-100 last:border-0 transition-colors"
+                        className="w-full text-left px-4 py-3 border-b last:border-0 transition-colors"
+                        style={{ borderColor: '#f2ede6' }}
+                        onMouseEnter={e => (e.currentTarget.style.background = '#f7f4fb')}
+                        onMouseLeave={e => (e.currentTarget.style.background = '')}
                       >
-                        <p className="font-medium text-gray-900 text-sm">{d.name}</p>
-                        {d.organization && <p className="text-xs text-gray-500">{d.organization}</p>}
+                        <p className="font-semibold text-sm" style={{ color: '#2a2333' }}>{d.name}</p>
+                        {d.organization && <p className="text-xs" style={{ color: '#9a8fa0' }}>{d.organization}</p>}
                       </button>
                     ))}
                   </div>
                 )}
                 <button
                   onClick={() => setIsNewDonor(true)}
-                  className="mt-4 w-full border-2 border-dashed border-gray-300 text-gray-600 py-3 rounded-xl text-sm hover:border-green-500 hover:text-green-700 transition-colors"
+                  className="mt-4 w-full py-3 rounded-xl text-sm font-bold transition-colors"
+                  style={{ border: '2px dashed #d6cee0', color: '#8b4a72' }}
                 >
                   + Add new donor
                 </button>
@@ -352,61 +356,42 @@ function CheckInForm() {
             )}
 
             {selectedDonor && (
-              <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-start justify-between">
+              <div className="rounded-xl p-4 flex items-start justify-between" style={{ background: '#f3e6f5', border: '1px solid #d6cee0' }}>
                 <div>
-                  <p className="font-semibold text-green-900">{selectedDonor.name}</p>
-                  {selectedDonor.organization && <p className="text-sm text-green-700">{selectedDonor.organization}</p>}
-                  {selectedDonor.email && <p className="text-xs text-green-600">{selectedDonor.email}</p>}
+                  <p className="font-semibold" style={{ color: '#3a1f4a' }}>{selectedDonor.name}</p>
+                  {selectedDonor.organization && <p className="text-sm" style={{ color: '#8b4a72' }}>{selectedDonor.organization}</p>}
+                  {selectedDonor.email && <p className="text-xs" style={{ color: '#9a8fa0' }}>{selectedDonor.email}</p>}
                 </div>
-                <button onClick={() => setSelectedDonor(null)} className="text-green-600 hover:text-red-500 text-sm ml-3">✕</button>
+                <button onClick={() => setSelectedDonor(null)} className="text-sm ml-3" style={{ color: '#8b4a72' }}>✕</button>
               </div>
             )}
 
             {isNewDonor && !selectedDonor && (
               <div className="space-y-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Full Name <span className="text-red-500">*</span></label>
-                  <input
-                    type="text"
-                    value={newDonorName}
-                    onChange={e => setNewDonorName(e.target.value)}
-                    placeholder="Jane Smith"
-                    className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-600 text-base"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Organization (optional)</label>
-                  <input
-                    type="text"
-                    value={newDonorOrg}
-                    onChange={e => setNewDonorOrg(e.target.value)}
-                    placeholder="Company or church name"
-                    className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-600 text-base"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email (optional)</label>
-                  <input
-                    type="email"
-                    value={newDonorEmail}
-                    onChange={e => setNewDonorEmail(e.target.value)}
-                    placeholder="jane@example.com"
-                    className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-600 text-base"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone (optional)</label>
-                  <input
-                    type="tel"
-                    value={newDonorPhone}
-                    onChange={e => setNewDonorPhone(e.target.value)}
-                    placeholder="(503) 555-0100"
-                    className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-600 text-base"
-                  />
-                </div>
+                {[
+                  { label: 'Full Name', key: 'name', value: newDonorName, onChange: setNewDonorName, placeholder: 'Jane Smith', required: true, type: 'text' },
+                  { label: 'Organization (optional)', key: 'org', value: newDonorOrg, onChange: setNewDonorOrg, placeholder: 'Company or church name', required: false, type: 'text' },
+                  { label: 'Email (optional)', key: 'email', value: newDonorEmail, onChange: setNewDonorEmail, placeholder: 'jane@example.com', required: false, type: 'email' },
+                  { label: 'Phone (optional)', key: 'phone', value: newDonorPhone, onChange: setNewDonorPhone, placeholder: '(503) 555-0100', required: false, type: 'tel' },
+                ].map(f => (
+                  <div key={f.key}>
+                    <label className="block text-sm font-semibold mb-1.5" style={{ color: '#4d4457' }}>
+                      {f.label} {f.required && <span className="text-red-500">*</span>}
+                    </label>
+                    <input
+                      type={f.type}
+                      value={f.value}
+                      onChange={e => f.onChange(e.target.value)}
+                      placeholder={f.placeholder}
+                      className="w-full px-4 py-3 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-purple-300"
+                      style={{ border: '1.5px solid #e3ddec', background: '#fbfafd', color: '#3a1f4a' }}
+                    />
+                  </div>
+                ))}
                 <button
                   onClick={() => setIsNewDonor(false)}
-                  className="text-sm text-gray-500 hover:text-gray-700 underline"
+                  className="text-sm font-semibold underline"
+                  style={{ color: '#8b4a72' }}
                 >
                   ← Back to search
                 </button>
@@ -417,7 +402,8 @@ function CheckInForm() {
           <button
             onClick={() => setStep(2)}
             disabled={!canProceedStep1}
-            className="w-full bg-green-700 text-white py-3.5 rounded-xl font-semibold text-base hover:bg-green-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            className="w-full text-white py-4 rounded-xl font-extrabold text-base disabled:opacity-40 disabled:cursor-not-allowed transition-opacity hover:opacity-90"
+            style={{ background: 'linear-gradient(120deg,#f5a623,#d1618a 55%,#7c3a9e)', boxShadow: '0 14px 30px -14px rgba(124,58,158,.7)' }}
           >
             Next: Item Details →
           </button>
@@ -427,12 +413,12 @@ function CheckInForm() {
       {/* Step 2 – Item Details */}
       {step === 2 && (
         <div className="space-y-5">
-          <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
+          <div className="bg-white rounded-2xl p-6" style={{ boxShadow: '0 10px 30px -18px rgba(58,31,74,.3)', border: '1px solid rgba(58,31,74,.05)' }}>
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">Donor</span>
-              <span className="text-sm text-gray-700 font-medium">{donorDisplay}</span>
+              <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: '#f3e6f5', color: '#8b4a72' }}>Donor</span>
+              <span className="text-sm font-semibold" style={{ color: '#4d4457' }}>{donorDisplay}</span>
             </div>
-            <h2 className="font-semibold text-gray-900 mt-3 mb-4">Item Details</h2>
+            <h2 className="font-extrabold text-lg mt-3 mb-4" style={{ color: '#3a1f4a' }}>Item Details</h2>
 
             <div className="space-y-4">
 
