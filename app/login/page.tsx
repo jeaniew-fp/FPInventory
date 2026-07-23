@@ -28,50 +28,61 @@ function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <Image src="/fpgwc-logo.png" alt="FPGWC Logo" width={80} height={80} className="mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-gray-900">FPGWC Inventory</h1>
-          <p className="text-gray-500 mt-1">Family Promise of Greater Washington County</p>
-        </div>
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
-          <form onSubmit={handleLogin} className="space-y-5">
+    <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden" style={{ background: 'linear-gradient(135deg,#f5a623 0%,#d1618a 50%,#7c3a9e 100%)' }}>
+      {/* Decorative circles */}
+      <div className="absolute top-0 right-0 w-72 h-72 rounded-full pointer-events-none" style={{ background: 'rgba(255,255,255,.12)', transform: 'translate(30%,-30%)' }} />
+      <div className="absolute bottom-0 left-0 w-56 h-56 rounded-full pointer-events-none" style={{ background: 'rgba(255,255,255,.10)', transform: 'translate(-30%,30%)' }} />
+
+      <div className="w-full max-w-sm relative z-10">
+        <div className="bg-white rounded-3xl p-8" style={{ boxShadow: '0 24px 60px -16px rgba(58,31,74,.45)' }}>
+          {/* Logo + title */}
+          <div className="text-center mb-7">
+            <div className="mx-auto mb-4 flex items-center justify-center rounded-full bg-white" style={{ width: 80, height: 80, boxShadow: '0 4px 16px rgba(0,0,0,.12)' }}>
+              <Image src="/fpgwc-logo.png" alt="FPGWC Logo" width={72} height={72} style={{ borderRadius: '50%', objectFit: 'contain' }} />
+            </div>
+            <h1 className="text-2xl font-extrabold" style={{ color: '#3a1f4a' }}>FPGWC Inventory</h1>
+            <p className="text-sm mt-1 font-medium" style={{ color: '#8b4a72' }}>Family Promise of Greater Washington County</p>
+          </div>
+
+          <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <label className="block text-sm font-semibold mb-1.5" style={{ color: '#4d4457' }}>Email</label>
               <input
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 required
-                className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-600 text-base"
+                className="w-full px-4 py-3 rounded-xl text-base focus:outline-none focus:ring-2"
+                style={{ border: '1.5px solid #e3ddec', background: '#fbfafd', color: '#3a1f4a' }}
                 placeholder="you@fpgwc.org"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+              <label className="block text-sm font-semibold mb-1.5" style={{ color: '#4d4457' }}>Password</label>
               <input
                 type="password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 required
-                className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-600 text-base"
+                className="w-full px-4 py-3 rounded-xl text-base focus:outline-none focus:ring-2"
+                style={{ border: '1.5px solid #e3ddec', background: '#fbfafd', color: '#3a1f4a' }}
                 placeholder="••••••••"
               />
             </div>
             <button
               type="submit"
               disabled={loading}
-              className="w-full text-white py-3 rounded-xl font-semibold text-base disabled:opacity-50 transition-opacity hover:opacity-90"
-            style={{ backgroundColor: '#8d4982' }}
+              className="w-full text-white py-3 rounded-xl font-extrabold text-base disabled:opacity-50 transition-opacity hover:opacity-90 mt-2"
+              style={{ background: 'linear-gradient(120deg,#f5a623,#d1618a 55%,#7c3a9e)', boxShadow: '0 14px 30px -10px rgba(124,58,158,.6)' }}
             >
               {loading ? 'Signing in…' : 'Sign In'}
             </button>
           </form>
+
+          <p className="text-center text-xs mt-5" style={{ color: '#a79fb0' }}>
+            Contact your administrator if you need access.
+          </p>
         </div>
-        <p className="text-center text-xs text-gray-400 mt-6">
-          Contact your administrator if you need access.
-        </p>
       </div>
     </div>
   );
