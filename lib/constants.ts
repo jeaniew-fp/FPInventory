@@ -13,8 +13,10 @@ export const ITEM_CATEGORIES = [
 ];
 
 export const STORAGE_LOCATIONS = [
-  'Beaverton House Orange Storage',
+  'Beaverton Orange Storage',
+  'Beaverton Shelter Shed',
   'Forest Grove',
+  'Hillsboro Shelter Sheds',
   'Promise Pantry',
   'Storage Unit',
 ];
