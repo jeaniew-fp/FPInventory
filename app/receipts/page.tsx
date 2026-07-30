@@ -18,8 +18,8 @@ export default async function ReceiptsPage() {
     <Layout role={profile?.role ?? 'case_manager'}>
       <div className="space-y-5">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Donation Receipts</h1>
-          <p className="text-gray-500 text-sm mt-1">
+          <h1 className="text-2xl font-extrabold" style={{ color: '#3a1f4a' }}>Donation Receipts</h1>
+          <p className="text-sm mt-1" style={{ color: '#8a7f92' }}>
             Search donations by donor and generate in-kind donation receipts
           </p>
         </div>

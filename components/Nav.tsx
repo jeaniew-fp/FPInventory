@@ -47,17 +47,15 @@ export default function Nav({ role }: { role: string }) {
               {item.label}
             </Link>
           ))}
-          {(role === 'admin' || role === 'coordinator') && (
-            <Link
-              href="/receipts"
-              className="text-sm font-semibold transition-colors px-3 py-1.5 rounded-lg"
-              style={pathname === '/receipts'
-                ? { color: '#fff', background: 'rgba(255,255,255,.24)' }
-                : { color: 'rgba(255,255,255,.9)' }}
-            >
-              Receipts
-            </Link>
-          )}
+          <Link
+            href="/receipts"
+            className="text-sm font-semibold transition-colors px-3 py-1.5 rounded-lg"
+            style={pathname === '/receipts'
+              ? { color: '#fff', background: 'rgba(255,255,255,.24)' }
+              : { color: 'rgba(255,255,255,.9)' }}
+          >
+            Receipts
+          </Link>
           {role === 'admin' && (
             <>
               <Link
@@ -138,16 +136,14 @@ export default function Nav({ role }: { role: string }) {
             {item.label}
           </Link>
         ))}
-        {(role === 'admin' || role === 'coordinator') && (
-          <Link
-            href="/receipts"
-            className="flex-1 flex flex-col items-center py-3 text-xs font-medium transition-colors"
-            style={{ color: pathname === '/receipts' ? '#8b4a72' : '#6b7280' }}
-          >
-            <span className="text-xl mb-0.5">🧾</span>
-            Receipts
-          </Link>
-        )}
+        <Link
+          href="/receipts"
+          className="flex-1 flex flex-col items-center py-3 text-xs font-medium transition-colors"
+          style={{ color: pathname === '/receipts' ? '#8b4a72' : '#6b7280' }}
+        >
+          <span className="text-xl mb-0.5">🧾</span>
+          Receipts
+        </Link>
         {role === 'admin' && (
           <Link
             href="/reports"
