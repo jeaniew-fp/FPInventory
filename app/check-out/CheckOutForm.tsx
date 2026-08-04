@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { PROGRAMS, GIFT_CARD_PURPOSES, GIFT_CARD_STORAGE_LOCATIONS } from '@/lib/constants';
@@ -31,7 +31,7 @@ const inputStyle = { border: '1.5px solid #e3ddec', background: '#fbfafd', color
 const selectStyle = { border: '1.5px solid #e3ddec', background: '#fbfafd', color: '#4d4457' };
 const cardStyle = { boxShadow: '0 10px 30px -18px rgba(58,31,74,.3)', border: '1px solid rgba(58,31,74,.05)' };
 
-function CheckOutFormInner() {
+export default function CheckOutForm() {
   const supabase = createClient();
   const searchParams = useSearchParams();
 
@@ -479,10 +479,3 @@ function CheckOutFormInner() {
   );
 }
 
-export default function CheckOutForm() {
-  return (
-    <Suspense fallback={<div className="py-12 text-center" style={{ color: '#9a8fa0' }}>Loading…</div>}>
-      <CheckOutFormInner />
-    </Suspense>
-  );
-}

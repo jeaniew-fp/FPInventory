@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef, Suspense } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { ITEM_CATEGORIES, STORAGE_LOCATIONS, GIFT_CARD_STORAGE_LOCATIONS, CONDITIONS, CHECK_IN_PROGRAMS, GIFT_CARD_PURPOSES } from '@/lib/constants';
@@ -24,7 +24,7 @@ type Step = 1 | 2 | 3;
 const inputStyle = { border: '1.5px solid #e3ddec', background: '#fbfafd', color: '#3a1f4a' };
 const selectStyle = { border: '1.5px solid #e3ddec', background: '#fbfafd', color: '#4d4457' };
 
-function CheckInFormInner() {
+export default function CheckInForm() {
   const supabase = createClient();
   const searchParams = useSearchParams();
   const [step, setStep] = useState<Step>(1);
@@ -151,7 +151,7 @@ function CheckInFormInner() {
         description: isGiftCard ? gcDescription : description.trim(),
         storageLocation,
         condition: isGiftCard ? 'New' : condition,
-        quantity,
+        quantity: Number(quantity),
         fmvPerUnit: isGiftCard ? faceValue : fmvPerUnit,
         photoUrl,
         notes: isGiftCard
@@ -593,10 +593,3 @@ function CheckInFormInner() {
   );
 }
 
-export default function CheckInForm() {
-  return (
-    <Suspense fallback={<div className="py-12 text-center" style={{ color: '#9a8fa0' }}>Loading…</div>}>
-      <CheckInFormInner />
-    </Suspense>
-  );
-}

@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import Layout from '@/components/Layout';
 import CheckInForm from './CheckInForm';
+import { Suspense } from 'react';
 
 export default async function CheckInPage() {
   const supabase = await createClient();
@@ -11,7 +12,9 @@ export default async function CheckInPage() {
 
   return (
     <Layout role={profile?.role ?? 'staff'}>
-      <CheckInForm />
+      <Suspense fallback={<div className="py-12 text-center" style={{ color: '#9a8fa0' }}>Loading…</div>}>
+        <CheckInForm />
+      </Suspense>
     </Layout>
   );
 }
