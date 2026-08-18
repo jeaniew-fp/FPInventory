@@ -5,7 +5,7 @@ export default function Layout({
   role,
 }: {
   children: React.ReactNode;
-  role: string;
+  role?: string;
 }) {
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#f8f7fb' }}>

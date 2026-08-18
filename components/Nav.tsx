@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
@@ -12,10 +13,20 @@ const navItems = [
   { href: '/inventory', label: 'Inventory', icon: '📦' },
 ];
 
-export default function Nav({ role }: { role: string }) {
+export default function Nav({ role: roleProp }: { role?: string }) {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
+  const [role, setRole] = useState(roleProp ?? '');
+
+  useEffect(() => {
+    if (roleProp) { setRole(roleProp); return; }
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      supabase.from('profiles').select('role').eq('id', user.id).single()
+        .then(({ data }) => { if (data?.role) setRole(data.role); });
+    });
+  }, [roleProp]);
 
   async function handleLogout() {
     await supabase.auth.signOut();
