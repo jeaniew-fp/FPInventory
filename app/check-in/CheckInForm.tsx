@@ -162,6 +162,7 @@ export default function CheckInForm() {
         retailer: isGiftCard ? retailer : undefined,
         faceValue: isGiftCard ? faceValue : undefined,
       });
+      if (result.error || !result.itemId) throw new Error(result.error ?? 'Check-in failed');
       const checkoutUrl = `${window.location.origin}/check-out?item=${result.itemId}`;
       const qr = await QRCode.toDataURL(checkoutUrl, { width: 256, margin: 2 });
       setQrDataUrl(qr);
