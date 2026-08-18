@@ -2,6 +2,8 @@ import { Suspense } from 'react';
 import Layout from '@/components/Layout';
 import CheckInForm from './CheckInForm';
 
+export const dynamic = 'force-dynamic';
+
 export default function CheckInPage() {
   return (
     <Layout>
