@@ -70,11 +70,6 @@ export default function ReceiptGenerator({
     return () => clearTimeout(timer);
   }, [donorSearch]);
 
-  // Set email when donor selected
-  useEffect(() => {
-    if (selectedDonor?.email) setEmailTo(selectedDonor.email);
-  }, [selectedDonor]);
-
   async function searchCheckIns() {
     if (!selectedDonor) { toast.error('Please select a donor first'); return; }
     setLoadingCheckIns(true);
